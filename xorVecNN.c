@@ -31,14 +31,14 @@ int main(void) {
 
     for (int epoch = 0; epoch < num_epochs; epoch++) {
         mat_mul(Z1, W1, X);
-        add_vec_to_mat(Z1, Z1, b1);
+        mat_vec_add(Z1, Z1, b1);
         sigmoid(A1, Z1);
         
         mat_mul(Z2, W2, A1);
-        add_vec_to_mat(Z2, Z2, b2);
+        mat_vec_add(Z2, Z2, b2);
         sigmoid(A2, Z2);
 
-        
+
     }
     
     free_mat(A2);
