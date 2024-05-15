@@ -222,14 +222,39 @@ void check_mul_dims(matrix* mat1, matrix* mat2) {
 void add_mats(matrix* result, matrix* mat1, matrix* mat2) {
     check_same_dims(mat1, mat2);
     check_same_dims(mat2, result);
-    size_t rows = result->rows;
-    size_t cols = result->cols;
-    size_t length = rows * cols; 
+    size_t length = result->rows * result->cols;
     double* data1 = mat1->data;
     double* data2 = mat2->data;
     double* data = result->data;
     for (int i = 0; i < length; i++) {
         data[i] = data1[i] + data2[i];
+    }
+}
+
+void add_vec_to_mat(matrix* result, matrix* mat1, matrix* vec) {
+    check_same_dims(result, mat1);
+    size_t rows = result->rows;
+    size_t cols = result->cols;
+    if (vec->rows != rows || vec->cols != 1) {
+        printf("Error: Invalid vector dimensions for add_vec_to_mat\n\n");
+        exit(0);
+    }
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            mat_set(result, i, j, mat_get(mat1, i, j) + mat_get(vec, i, 1));
+        }
+    }
+}
+
+void mat_elem_mul(matrix* result, matrix* mat1, matrix* mat2) {
+    check_same_dims(mat1, mat2);
+    check_same_dims(mat2, result);
+    size_t length = result->rows * result->cols; 
+    double* data1 = mat1->data;
+    double* data2 = mat2->data;
+    double* data = result->data;
+    for (int i = 0; i < length; i++) {
+        data[i] = data1[i] * data2[i];
     }
 }
 
@@ -255,6 +280,24 @@ void mat_mul(matrix* result, matrix* mat1, matrix* mat2) {
     }
 }
 
+void mat_scalar_mul(matrix* result, matrix* mat, double c) {
+    check_same_dims(result, mat);
+    size_t length = result->rows * result->cols;
+    double* result_data = result->data;
+    double* data = mat->data;
+    for (int i = 0; i < length; i++) {
+        result_data[i] = c * data[i];
+    }
+}
+
+void sigmoid(matrix* result, matrix* mat) {
+    size_t length = mat->rows * mat->cols;
+    double* data = mat->data;
+    double* result_data = result->data;
+    for (int i = 0; i < length; i++) {
+        result_data[i] = 1 / (1 + exp(-1 * data[i]));
+    }
+}
 
 int main(void) {
     double arr1[] = {1, 2, 3, 4, 5, 6};

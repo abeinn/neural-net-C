@@ -11,11 +11,13 @@
 int main(void) {
     const double lr = 0.1f;
     
-    matrix* A0 = zero_mat(n, m);
     matrix* A1 = zero_mat(n1, m);
+    matrix* Z1 = zero_mat(n1, m);
+    matrix* A2 = zero_mat(n2, m);
+    matrix* Z2 = zero_mat(n2, m);
 
-    vector* b1 = rand_vec(n1);
-    vector* b2 = rand_vec(n2);
+    matrix* b1 = rand_mat(n1, 1);
+    matrix* b2 = rand_mat(n2, 1);
 
     matrix* W1 = rand_mat(n1, n);
     matrix* W2 = rand_mat(n2, n1);
@@ -28,8 +30,26 @@ int main(void) {
     int num_epochs = 10000;
 
     for (int epoch = 0; epoch < num_epochs; epoch++) {
+        mat_mul(Z1, W1, X);
+        add_vec_to_mat(Z1, Z1, b1);
+        sigmoid(A1, Z1);
+        
+        mat_mul(Z2, W2, A1);
+        add_vec_to_mat(Z2, Z2, b2);
+        sigmoid(A2, Z2);
+
         
     }
     
+    free_mat(A2);
+    free_mat(A1);
+    free_mat(Z2);
+    free_mat(Z1);
+    free_mat(b1);
+    free_mat(b2);
+    free_mat(W1);
+    free_mat(W2);
+    free_mat(X);
+    free_mat(Y);
 
 }
