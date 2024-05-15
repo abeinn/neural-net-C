@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <stdbool.h>
 
 typedef struct {
     size_t rows;
@@ -10,7 +11,7 @@ typedef struct {
 
 double rand_weight() { return ((double) rand()) / ((double) RAND_MAX); }
 
-void check_alloc(void* ptr) {
+void check_alloc(void *ptr) {
     if (ptr == NULL) {
         printf("Error: Memory not allocated\n");
         exit(0);
@@ -18,46 +19,46 @@ void check_alloc(void* ptr) {
 }
 
 matrix* zero_mat(size_t rows, size_t cols) {
-    matrix* mat = malloc(sizeof(matrix));
+    matrix *mat = malloc(sizeof(matrix));
     check_alloc(mat);
     mat->rows = rows;
     mat->cols = cols; 
-    mat->data = calloc(rows * cols, sizeof(double));
+    mat->data = calloc(rows  *cols, sizeof(double));
     check_alloc(mat->data);
     return mat;
 }
 
-double mat_get(matrix* mat, int i, int j) { return mat->data[i * mat->cols + j]; }
+double mat_get(matrix *mat, int i, int j) { return mat->data[i  *mat->cols + j]; }
 
-void mat_set(matrix* mat, int i, int j, double val) { mat->data[i * mat->cols + j] = val; }
+void mat_set(matrix *mat, int i, int j, double val) { mat->data[i  *mat->cols + j] = val; }
 
 matrix* rand_mat(size_t rows, size_t cols) {
     
-    matrix* mat = zero_mat(rows, cols);
-    double* data = mat->data;
-    size_t length = rows * cols;
+    matrix *mat = zero_mat(rows, cols);
+    double *data = mat->data;
+    size_t length = rows  *cols;
     for (int i = 0; i < length; i++) {
         data[i] = rand_weight();
     }
     return mat; 
 }
 
-matrix* mat_from_array(double* arr, size_t rows, size_t cols) {
-    matrix* mat = zero_mat(rows, cols);
-    double* data = mat->data;
-    size_t length = rows * cols;
+matrix* mat_from_array(double *arr, size_t rows, size_t cols) {
+    matrix *mat = zero_mat(rows, cols);
+    double *data = mat->data;
+    size_t length = rows  *cols;
     for (int i = 0; i < length; i++) {
         data[i] = arr[i];
     }
     return mat; 
 }
 
-void free_mat(matrix* mat) {
+void free_mat(matrix *mat) {
     free(mat->data);
     free(mat);
 }
 
-void print_mat(matrix* mat) {
+void print_mat(matrix *mat) {
     size_t rows = mat->rows; 
     size_t cols = mat->cols;
     printf("[");
@@ -77,7 +78,7 @@ void print_mat(matrix* mat) {
     printf("]\n\n");
 }
 
-void check_same_dims(matrix* mat1, matrix* mat2) {
+void check_same_dims(matrix *mat1, matrix *mat2) {
     size_t rows1 = mat1->rows;
     size_t cols1 = mat1->cols;
     size_t rows2 = mat2->rows;
@@ -89,7 +90,7 @@ void check_same_dims(matrix* mat1, matrix* mat2) {
     }
 }
 
-void check_mul_dims(matrix* mat1, matrix* mat2) {
+void check_mul_dims(matrix *mat1, matrix *mat2) {
     size_t cols1 = mat1->cols;
     size_t rows2 = mat2->rows;
     if (cols1 != rows2) {
@@ -98,19 +99,19 @@ void check_mul_dims(matrix* mat1, matrix* mat2) {
     }
 }
 
-void mat_add(matrix* result, matrix* mat1, matrix* mat2) {
+void mat_add(matrix *result, matrix *mat1, matrix *mat2) {
     check_same_dims(mat1, mat2);
     check_same_dims(mat2, result);
-    size_t length = result->rows * result->cols;
-    double* data1 = mat1->data;
-    double* data2 = mat2->data;
-    double* data = result->data;
+    size_t length = result->rows  *result->cols;
+    double *data1 = mat1->data;
+    double *data2 = mat2->data;
+    double *data = result->data;
     for (int i = 0; i < length; i++) {
         data[i] = data1[i] + data2[i];
     }
 }
 
-void mat_vec_add(matrix* result, matrix* mat1, matrix* vec) {
+void mat_vec_add(matrix *result, matrix *mat1, matrix *vec) {
     check_same_dims(result, mat1);
     size_t rows = result->rows;
     size_t cols = result->cols;
@@ -125,19 +126,19 @@ void mat_vec_add(matrix* result, matrix* mat1, matrix* vec) {
     }
 }
 
-void mat_elem_mul(matrix* result, matrix* mat1, matrix* mat2) {
+void mat_elem_mul(matrix *result, matrix *mat1, matrix *mat2) {
     check_same_dims(mat1, mat2);
     check_same_dims(mat2, result);
-    size_t length = result->rows * result->cols; 
-    double* data1 = mat1->data;
-    double* data2 = mat2->data;
-    double* data = result->data;
+    size_t length = result->rows  *result->cols; 
+    double *data1 = mat1->data;
+    double *data2 = mat2->data;
+    double *data = result->data;
     for (int i = 0; i < length; i++) {
-        data[i] = data1[i] * data2[i];
+        data[i] = data1[i]  *data2[i];
     }
 }
 
-void mat_mul(matrix* result, matrix* mat1, matrix* mat2) {
+void mat_mul(matrix *result, matrix *mat1, matrix *mat2) {
     check_mul_dims(mat1, mat2);
     size_t rows1 = mat1->rows;
     size_t cols1 = mat1->cols;
@@ -147,34 +148,74 @@ void mat_mul(matrix* result, matrix* mat1, matrix* mat2) {
         exit(0);
     }
 
-    int dot_prod; 
+    double dot_prod; 
     for (int i = 0; i < rows1; i++){ 
         for (int j = 0; j < cols2; j++) {
             dot_prod = 0;
             for (int k = 0; k < cols1; k++) {
-                dot_prod += mat_get(mat1, i, k) * mat_get(mat2, k, j);
+                dot_prod += mat_get(mat1, i, k)  *mat_get(mat2, k, j);
             }
             mat_set(result, i, j, dot_prod);
         }
     }
 }
 
-void mat_scalar_mul(matrix* result, matrix* mat, double c) {
-    check_same_dims(result, mat);
-    size_t length = result->rows * result->cols;
-    double* result_data = result->data;
-    double* data = mat->data;
-    for (int i = 0; i < length; i++) {
-        result_data[i] = c * data[i];
+void mat_mul_trans(matrix *result, matrix *mat1, matrix *mat2, bool t1, bool t2) {
+    size_t rows1 = t1 ? mat1->cols : mat1->rows;
+    size_t cols1 = t1 ? mat1->rows : mat1->cols;
+    size_t rows2 = t2 ? mat2->cols : mat2->rows;
+    size_t cols2 = t2 ? mat2->rows : mat2->cols; 
+
+    if ((cols1 != rows2) || (rows1 != result->rows) || (cols2 != result->cols)) {
+        printf("Error: Dimensions are invalid for mat_mul_trans\n\n");
+        exit(0);
+    }
+
+    double val1, val2, dot_prod;
+    for (int i = 0; i < rows1; i++) {
+        for (int j = 0; j < cols2; j++) {
+            dot_prod = 0; 
+            for (int k = 0; k < cols1; k++) {
+                val1 = t1 ? mat_get(mat1, k, i) : mat_get(mat1, i, k);
+                val2 = t2 ? mat_get(mat2, j, k) : mat_get(mat2, k, j);
+                dot_prod += val1  *val2;
+            }
+            mat_set(result, i, j, dot_prod);
+        }
     }
 }
 
-void sigmoid(matrix* result, matrix* mat) {
-    size_t length = mat->rows * mat->cols;
-    double* data = mat->data;
-    double* result_data = result->data;
+void mat_scalar_mul(matrix *result, matrix *mat, double c) {
+    check_same_dims(result, mat);
+    size_t length = result->rows  *result->cols;
+    double *result_data = result->data;
+    double *data = mat->data;
     for (int i = 0; i < length; i++) {
-        result_data[i] = 1 / (1 + exp(-1 * data[i]));
+        result_data[i] = c  *data[i];
     }
 }
+
+void sigmoid(matrix *result, matrix *mat) {
+    size_t length = mat->rows  *mat->cols;
+    double *data = mat->data;
+    double *result_data = result->data;
+    for (int i = 0; i < length; i++) {
+        result_data[i] = 1 / (1 + exp(-1  *data[i]));
+    }
+}
+
+// int main(void) {
+//     double arr1[] = {1, 2, 3, 4, 5, 6};
+//     double arr2[] = {1, 0, 0, 1, 3, -1};
+//     matrix *mat1 = mat_from_array(arr1, 2, 3);
+//     matrix *mat2 = mat_from_array(arr2, 2, 3);
+//     print_mat(mat1);
+//     print_mat(mat2);
+//     matrix *mat3 = zero_mat(3, 3);
+//     mat_mul_trans(mat3, mat1, mat2, true, false);
+//     print_mat(mat3);
+//     free_mat(mat1);
+//     free_mat(mat2);
+//     free_mat(mat3);
+// }
 
