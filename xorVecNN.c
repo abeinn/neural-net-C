@@ -23,7 +23,10 @@ int main(void) {
     size_t layer_sizes[] = {2, 2, 1};
     nn_model *model = create_model(3, layer_sizes);
     train_model(model, X, Y, 4, epochs, lr);
-    
+
     free_model(model);
+
+    free_mat(X);
+    free_mat(Y);
 
 }

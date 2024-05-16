@@ -28,22 +28,6 @@ matrix* zero_mat(size_t rows, size_t cols) {
     return mat;
 }
 
-double mat_get(matrix *mat, int i, int j) { 
-    if ((i >= mat->rows) || (i < 0) || (j >= mat->cols) || (j < 0)){
-        printf("Error: Index out of bounds for mat_get");
-        exit(0);
-    }
-    return mat->data[i  *mat->cols + j]; 
-}
-
-void mat_set(matrix *mat, int i, int j, double val) { 
-    if ((i >= mat->rows) || (i < 0) || (j >= mat->cols) || (j < 0)){
-        printf("Error: Index out of bounds for mat_set");
-        exit(0);
-    }
-    mat->data[i  *mat->cols + j] = val; 
-}
-
 matrix* rand_mat(size_t rows, size_t cols) {
     
     matrix *mat = zero_mat(rows, cols);
@@ -66,8 +50,29 @@ matrix* mat_from_array(double *arr, size_t rows, size_t cols) {
 }
 
 void free_mat(matrix *mat) {
-    free(mat->data);
+    if (mat == NULL) {
+        return;
+    }
+    if (mat->data != NULL) {
+        free(mat->data);
+    }
     free(mat);
+}
+
+double mat_get(matrix *mat, int i, int j) { 
+    if ((i >= mat->rows) || (i < 0) || (j >= mat->cols) || (j < 0)){
+        printf("Error: Index out of bounds for mat_get");
+        exit(0);
+    }
+    return mat->data[i  *mat->cols + j]; 
+}
+
+void mat_set(matrix *mat, int i, int j, double val) { 
+    if ((i >= mat->rows) || (i < 0) || (j >= mat->cols) || (j < 0)){
+        printf("Error: Index out of bounds for mat_set");
+        exit(0);
+    }
+    mat->data[i  *mat->cols + j] = val; 
 }
 
 void print_mat(matrix *mat) {

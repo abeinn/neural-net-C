@@ -99,26 +99,24 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t m, int epochs, do
             mat_lin_combo(layers[i].b, layers[i].b, layers[i].db, 1.0, -lr);
         }
     }
-}
-
-void free_if_valid(matrix *mat) {
-    if (mat != NULL) {
-        free_mat(mat);
-    }
+    layers[0].A = NULL;
 }
 
 void free_model(nn_model *model) {
+    if (model == NULL) {
+        return;
+    }
     size_t num_layers = model->num_layers;
     nn_layer *layers = model->layers;
     for (int i = 0; i < num_layers; i++) {
-        free_if_valid(layers[i].W);
-        free_if_valid(layers[i].b);
-        free_if_valid(layers[i].A);
-        free_if_valid(layers[i].Z);
-        free_if_valid(layers[i].dW);
-        free_if_valid(layers[i].db);
-        free_if_valid(layers[i].dA);
-        free_if_valid(layers[i].dZ);
+        free_mat(layers[i].W);
+        free_mat(layers[i].b);
+        free_mat(layers[i].A);
+        free_mat(layers[i].Z);
+        free_mat(layers[i].dW);
+        free_mat(layers[i].db);
+        free_mat(layers[i].dA);
+        free_mat(layers[i].dZ);
     }
     free(layers);
     free(model);
