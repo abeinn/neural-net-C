@@ -9,6 +9,7 @@ enum func {
     SIGMOID,
     SOFTMAX
 };
+
 typedef struct {
     size_t num_nodes;
     enum func activation;
@@ -154,6 +155,7 @@ void model_predict(nn_model *model, matrix *result, matrix *input) {
 
     layers[0].a = input;
 
+    // Evaluate model on input using trained weights
     for (int i = 1; i < num_layers; i++) {
         mat_mul(layers[i].z, layers[i].W, layers[i - 1].a);
         mat_add(layers[i].z, layers[i].z, layers[i].b);
