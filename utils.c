@@ -192,6 +192,10 @@ void mat_scalar_mul(matrix *result, matrix *mat, double c) {
     }
 }
 
+void mat_copy(matrix *result, matrix *mat) {
+    mat_scalar_mul(result, mat, 1.0);
+}
+
 void mat_elem_mul(matrix *result, matrix *mat1, matrix *mat2) {
     // Element wise mulitplication of two equal sized matrices
 
@@ -248,6 +252,47 @@ void dsigmoid(matrix *result, matrix *mat) {
     double *result_data = result->data;
     for (int i = 0; i < length; i++) {
         result_data[i] = data[i] * (1 - data[i]);
+    }
+}
+
+void softmax(matrix *result, matrix *mat) {
+    // Softmax function Applied to each element/column of mat
+
+    check_same_dims(result, mat);
+    size_t rows = mat->rows; 
+    size_t cols = mat->cols;
+    double sum, val;
+    for (int j = 0; j < cols; j++) {
+        sum = 0;
+        for (int i = 0; i < rows; i++) {
+            sum += exp(mat_get(mat, i, j));
+        }
+        for (int i = 0; i < rows; i++) {
+            val = exp(mat_get(mat, i, j)) / sum;
+            mat_set(result, i, j, val);
+        }
+    }
+}
+
+void relu(matrix *result, matrix *mat) {
+    // ReLu function applied to each element of mat 
+
+    check_same_dims(result, mat);
+    size_t length = mat->rows * mat->cols;
+    double *data = mat->data;
+    double *result_data = result->data;
+    for (int i = 0; i < length; i++) {
+        result_data[i] = fmax(0.0, data[i]);
+    }
+}
+
+void drelu(matrix *result, matrix *mat) {
+    check_same_dims(result, mat);
+    size_t length = mat->rows * mat->cols;
+    double *data = mat->data;
+    double *result_data = result->data;
+    for (int i = 0; i < length; i++) {
+        result_data[i] = (data[i] > 0.0) ? 1.0 : 0.0;
     }
 }
 

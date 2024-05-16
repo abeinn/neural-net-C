@@ -3,12 +3,21 @@
 #include <math.h>
 #include "utils.c"
 
+enum func {
+    INPUT,
+    RELU,
+    SIGMOID,
+    SOFTMAX
+};
 typedef struct {
     size_t num_nodes;
+    enum func activation;
     matrix *W;
     matrix *b;
     matrix *A;
+    matrix *a;
     matrix *Z;
+    matrix *z;
     matrix *dW;
     matrix *db;
     matrix *dA;
@@ -20,7 +29,7 @@ typedef struct {
     nn_layer *layers; 
 } nn_model;
 
-nn_model* create_model(size_t num_layers, size_t *layer_sizes) {
+nn_model* create_model(size_t num_layers, size_t *layer_sizes, enum func *layer_activations) {
     nn_model *model = malloc(sizeof(nn_model));
 
     check_alloc(model);
@@ -37,10 +46,17 @@ nn_model* create_model(size_t num_layers, size_t *layer_sizes) {
         n_curr = layer_sizes[i];
         n_prev = layer_sizes[i - 1];
         layers[i].num_nodes = n_curr;
+
         layers[i].W = rand_mat(n_curr, n_prev);
         layers[i].b = rand_mat(n_curr, 1);
         layers[i].dW = zero_mat(n_curr, n_prev);
         layers[i].db = zero_mat(n_curr, 1);
+
+        // Initialize intermediate vectors for use in model_predict
+        layers[i].a = zero_mat(n_curr, 1);
+        layers[i].z = zero_mat(n_curr, 1);
+
+        layers[i].activation = layer_activations[i];
     }
     
     return model;
@@ -68,7 +84,14 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t m, int epochs, do
         for (int i = 1; i < num_layers; i++) {
             mat_mul(layers[i].Z, layers[i].W, layers[i - 1].A);
             mat_vec_add(layers[i].Z, layers[i].Z, layers[i].b);
-            sigmoid(layers[i].A, layers[i].Z);
+
+            if (layers[i].activation == SIGMOID) {
+                sigmoid(layers[i].A, layers[i].Z);
+            } else if (layers[i].activation == SOFTMAX) {
+                softmax(layers[i].A, layers[i].Z);
+            } else if (layers[i].activation == RELU) {
+                relu(layers[i].A, layers[i].Z);
+            }
         }
 
         printf("Expected:\n");
@@ -80,13 +103,18 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t m, int epochs, do
 
         // Compute dZ for last layer
         mat_sub(layers[last_i].dZ, layers[last_i].A, Y);
-        
+
         for (int i = last_i; i > 0; i--) {
             
             if (i != last_i) {
                 mat_mul_trans(layers[i].dA, layers[i + 1].W, layers[i + 1].dZ, true, false);
 
-                dsigmoid(layers[i].dZ, layers[i].A);
+                if (layers[i].activation == SIGMOID) {
+                    dsigmoid(layers[i].dZ, layers[i].A);
+                } else if (layers[i].activation == RELU) {
+                    drelu(layers[i].dZ, layers[i].Z);
+                }
+
                 mat_elem_mul(layers[i].dZ, layers[i].dA, layers[i].dZ);
             }
             
@@ -109,6 +137,41 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t m, int epochs, do
     layers[0].A = NULL;
 }
 
+void model_predict(nn_model *model, matrix *result, matrix *input) {
+    // Evaluate a trained model on input
+
+    size_t num_layers = model->num_layers;
+    nn_layer *layers = model->layers;
+    size_t n_out = layers[num_layers - 1].num_nodes;
+    size_t n_in = layers[0].num_nodes;
+    if ((result->cols != 1) || (result->rows != n_out)) {
+        printf("Error: Invalid result vector for model_predict\n\n");
+        exit(0);
+    } else if ((input->cols != 1) || (input->rows != n_in)) {
+        printf("Error: Invalid input vector for model_predict\n\n");
+        exit(0);
+    }
+
+    layers[0].a = input;
+
+    for (int i = 1; i < num_layers; i++) {
+        mat_mul(layers[i].z, layers[i].W, layers[i - 1].a);
+        mat_add(layers[i].z, layers[i].z, layers[i].b);
+
+        if (layers[i].activation == SIGMOID) {
+            sigmoid(layers[i].a, layers[i].z);
+        } else if (layers[i].activation == SOFTMAX) {
+            softmax(layers[i].a, layers[i].z);
+        } else if (layers[i].activation == RELU) {
+            relu(layers[i].a, layers[i].z);
+        }
+    }
+
+    mat_copy(result, layers[num_layers - 1].a);
+
+    layers[0].a = NULL;
+}
+
 void free_model(nn_model *model) {
     if (model == NULL) {
         return;
@@ -120,6 +183,8 @@ void free_model(nn_model *model) {
         free_mat(layers[i].b);
         free_mat(layers[i].A);
         free_mat(layers[i].Z);
+        free_mat(layers[i].a);
+        free_mat(layers[i].z);
         free_mat(layers[i].dW);
         free_mat(layers[i].db);
         free_mat(layers[i].dA);
