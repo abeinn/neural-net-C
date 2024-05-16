@@ -30,6 +30,7 @@ nn_model* create_model(size_t num_layers, size_t *layer_sizes) {
     check_alloc(layers);
     model->layers = layers;
 
+    // Initalize weights and layer sizes
     layers[0].num_nodes = layer_sizes[0];
     size_t n_curr, n_prev;
     for (int i = 1; i < num_layers; i++) {
@@ -50,6 +51,7 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t m, int epochs, do
     size_t num_layers = model->num_layers;
     int last_i = num_layers - 1;
 
+    // Create matrices used in forward and back prop
     layers[0].A = X; 
     size_t n_curr; 
     for (int i = 1; i < num_layers; i++) {
@@ -75,7 +77,10 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t m, int epochs, do
         print_mat(layers[last_i].A);
 
         // Back propagation
+
+        // Compute dZ for last layer
         mat_sub(layers[last_i].dZ, layers[last_i].A, Y);
+        
         for (int i = last_i; i > 0; i--) {
             
             if (i != last_i) {
@@ -99,6 +104,8 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t m, int epochs, do
             mat_lin_combo(layers[i].b, layers[i].b, layers[i].db, 1.0, -lr);
         }
     }
+
+    // Remove X from model so X isn't freed in free_model
     layers[0].A = NULL;
 }
 

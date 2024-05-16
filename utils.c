@@ -96,6 +96,8 @@ void print_mat(matrix *mat) {
 }
 
 void check_same_dims(matrix *mat1, matrix *mat2) {
+    // Checks if matrices mat1, mat2 have the same dimensions
+
     size_t rows1 = mat1->rows;
     size_t cols1 = mat1->cols;
     size_t rows2 = mat2->rows;
@@ -108,6 +110,8 @@ void check_same_dims(matrix *mat1, matrix *mat2) {
 }
 
 void mat_lin_combo(matrix *result, matrix *mat1, matrix *mat2, double c1, double c2) {
+    // Computes c1 * mat1 + c2 * mat2 for matrices mat1, mat2 and scalars c1, c2
+
     check_same_dims(mat1, mat2);
     check_same_dims(mat2, result);
     size_t length = result->rows  *result->cols;
@@ -127,8 +131,10 @@ void mat_sub(matrix *result, matrix *mat1, matrix *mat2) {
     mat_lin_combo(result, mat1, mat2, 1, -1);
 }
 
-void mat_vec_add(matrix *result, matrix *mat1, matrix *vec) {
-    check_same_dims(result, mat1);
+void mat_vec_add(matrix *result, matrix *mat, matrix *vec) {
+    // Add column vector vec to each column of mat
+
+    check_same_dims(result, mat);
     size_t rows = result->rows;
     size_t cols = result->cols;
     if (vec->rows != rows || vec->cols != 1) {
@@ -137,35 +143,15 @@ void mat_vec_add(matrix *result, matrix *mat1, matrix *vec) {
     }
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
-            mat_set(result, i, j, mat_get(mat1, i, j) + mat_get(vec, i, 0));
-        }
-    }
-}
-
-void mat_mul(matrix *result, matrix *mat1, matrix *mat2) {
-    check_mul_dims(mat1, mat2);
-    size_t rows1 = mat1->rows;
-    size_t rows2 = mat2->cols;
-    size_t cols1 = mat1->cols;
-    size_t cols2 = mat2->cols;
-    if ((cols1 != rows2) || (rows1 != result->rows) || (cols2 != result->cols)) {
-        printf("Error: Dimensions are invalid for mat_mul\n\n");
-        exit(0);
-    }
-
-    double dot_prod; 
-    for (int i = 0; i < rows1; i++){ 
-        for (int j = 0; j < cols2; j++) {
-            dot_prod = 0;
-            for (int k = 0; k < cols1; k++) {
-                dot_prod += mat_get(mat1, i, k)  *mat_get(mat2, k, j);
-            }
-            mat_set(result, i, j, dot_prod);
+            mat_set(result, i, j, mat_get(mat, i, j) + mat_get(vec, i, 0));
         }
     }
 }
 
 void mat_mul_trans(matrix *result, matrix *mat1, matrix *mat2, bool t1, bool t2) {
+    // Multiply matrices mat1 and mat2
+    // Can transpose mat1 or mat2 before multiplying by setting t1 = true or t2 = true respectively 
+
     size_t rows1 = t1 ? mat1->cols : mat1->rows;
     size_t cols1 = t1 ? mat1->rows : mat1->cols;
     size_t rows2 = t2 ? mat2->cols : mat2->rows;
@@ -190,7 +176,13 @@ void mat_mul_trans(matrix *result, matrix *mat1, matrix *mat2, bool t1, bool t2)
     }
 }
 
+void mat_mul(matrix *result, matrix *mat1, matrix *mat2) {
+    mat_mul_trans(result, mat1, mat2, false, false);
+}
+
 void mat_scalar_mul(matrix *result, matrix *mat, double c) {
+    // Multiply each element in matrix mat by a scalar c
+
     check_same_dims(result, mat);
     size_t length = result->rows  *result->cols;
     double *result_data = result->data;
@@ -201,6 +193,8 @@ void mat_scalar_mul(matrix *result, matrix *mat, double c) {
 }
 
 void mat_elem_mul(matrix *result, matrix *mat1, matrix *mat2) {
+    // Element wise mulitplication of two equal sized matrices
+
     check_same_dims(mat1, mat2);
     check_same_dims(mat2, result);
     size_t length = result->rows  *result->cols; 
@@ -213,6 +207,9 @@ void mat_elem_mul(matrix *result, matrix *mat1, matrix *mat2) {
 }
 
 void mat_sum_rows(matrix *result, matrix *mat) {
+    // Sets result[i] = sum of values in row i of mat
+    // result should be a vector such that result->rows = mat->rows
+
     size_t rows = mat->rows;
     size_t cols = mat->cols;
     if ((result->cols != 1) || (result->rows != rows)) {
@@ -230,6 +227,8 @@ void mat_sum_rows(matrix *result, matrix *mat) {
 }
 
 void sigmoid(matrix *result, matrix *mat) {
+    // Sigmoid function applied on each element of mat
+
     check_same_dims(result, mat);
     size_t length = mat->rows * mat->cols;
     double *data = mat->data;
@@ -240,6 +239,9 @@ void sigmoid(matrix *result, matrix *mat) {
 }
 
 void dsigmoid(matrix *result, matrix *mat) {
+    // Derivative of sigmoid function
+    // Expects mat to be result of sigmoid(mat, X) for some X
+
     size_t length = mat->rows * mat->cols;
     check_same_dims(result, mat);
     double *data = mat->data;
