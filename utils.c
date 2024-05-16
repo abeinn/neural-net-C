@@ -23,7 +23,7 @@ matrix* zero_mat(size_t rows, size_t cols) {
     check_alloc(mat);
     mat->rows = rows;
     mat->cols = cols; 
-    mat->data = calloc(rows  *cols, sizeof(double));
+    mat->data = calloc(rows * cols, sizeof(double));
     check_alloc(mat->data);
     return mat;
 }
