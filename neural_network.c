@@ -98,6 +98,13 @@ void model_predict(nn_model *model, matrix *result, matrix *input, size_t num_in
 
     mat_copy(result, layers[num_layers - 1].a);
 
+    for (int i = 1; i < num_layers; i++) {
+        free_mat(layers[i].a);
+        free_mat(layers[i].z);
+        layers[i].a = NULL;
+        layers[i].z = NULL;
+    }
+
     layers[0].a = NULL;
 }
 
@@ -130,7 +137,7 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
 
     for (int epoch = 0; epoch < epochs; epoch++) {
 
-        if ((epoch + 1) % 100 == 0) {
+        if ((epoch + 1) % 10 == 0) {
             printf("Training progress: %d/%d\n", epoch + 1, epochs);
         }
 
@@ -154,8 +161,7 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
         // print_mat(mini_Y);
         // printf("Predicted: \n");
         // print_mat(layers[last_i].A);
-        // printf("Expected: %d\n", max_index(mini_Y));
-        // printf("Predicted: %d\n\n", max_index(layers[last_i].A));
+    
 
         // Back propagation
 
@@ -202,7 +208,7 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
     printf("Evaluating model on training data\n");
     model_predict(model, Y_hat, X, X->cols);
 
-    printf("Calculating training accuracy");
+    printf("Calculating training accuracy\n");
     for (int i = 0; i < Y->cols; i++) {
         mat_get_col(y, Y, i);
         mat_get_col(y_hat, Y_hat, i);
@@ -218,6 +224,8 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
     free_mat(mini_X);
     free_mat(mini_Y);
     free_mat(Y_hat);
+    free_mat(y);
+    free_mat(y_hat);
     free(indices);
 }
 

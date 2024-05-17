@@ -36,26 +36,29 @@ void load_data(matrix *X, matrix *Y, char *filename) {
             mat_set(X, j, i, val);
             field = strtok(NULL, ",");
         }
-        
+    }
+    while (fgets(line, sizeof(line), file)) {
+        // Do nothing
     }
 
+    fclose(file);
     printf("Finished loading data\n\n");
     
 }
 
 int main(void) {
     srand(123);
-    const double lr = 0.001f;
+    const double lr = 0.5f;
     const double epochs = 1000;
-    const size_t mini_batch_size = 128;
+    const size_t mini_batch_size = 64;
 
     matrix *X = zero_mat(INPUT_SIZE, TRAINING_SET_SIZE);
     matrix *Y = zero_mat(OUTPUT_CLASSES, TRAINING_SET_SIZE);
     load_data(X, Y, "train.csv");
     
-    size_t num_layers = 5;
-    size_t layer_sizes[] = {INPUT_SIZE, 128, 64, 64, 10};
-    enum func layer_activations[] = {INPUT, RELU, RELU, SIGMOID, SOFTMAX};
+    size_t num_layers = 2;
+    size_t layer_sizes[] = {INPUT_SIZE, 10};
+    enum func layer_activations[] = {INPUT, SOFTMAX};
     nn_model *model = create_model(num_layers, layer_sizes, layer_activations);
 
     train_model(model, X, Y, mini_batch_size, epochs, lr);
