@@ -287,6 +287,8 @@ void relu(matrix *result, matrix *mat) {
 }
 
 void drelu(matrix *result, matrix *mat) {
+    // Derivative of ReLu function applied to each element of mat
+
     check_same_dims(result, mat);
     size_t length = mat->rows * mat->cols;
     double *data = mat->data;
@@ -294,5 +296,36 @@ void drelu(matrix *result, matrix *mat) {
     for (int i = 0; i < length; i++) {
         result_data[i] = (data[i] > 0.0) ? 1.0 : 0.0;
     }
+}
+
+void shuffle_array(int *array, int n) {
+    if (n > 1) {
+        for (int i = 0; i < n - 1; i++) {
+            int j = i + rand() / (RAND_MAX / (n - i) + 1);
+            int t = array[j];
+            array[j] = array[i];
+            array[i] = t;
+        }
+    }
+}
+
+void mini_batch(matrix *mini_X, matrix *mini_Y, matrix *X, matrix *Y, int *indices) {
+    size_t rows_X = X->rows;
+    size_t rows_Y = Y->rows;
+    size_t cols = mini_X->cols;
+    size_t n = X->cols; 
+    shuffle_array(indices, n);
+    int index; 
+
+    for (int j = 0; j < cols; j++) {
+        index = indices[j];
+        for (int i_X = 0; i_X < rows_X; i_X++) {
+            mat_set(mini_X, i_X, j, mat_get(X, i_X, index));
+        }
+        for (int i_Y = 0; i_Y < rows_Y; i_Y++) {
+            mat_set(mini_Y, i_Y, j, mat_get(Y, i_Y, index));
+        }
+    }
+
 }
 

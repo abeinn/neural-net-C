@@ -63,13 +63,22 @@ nn_model* create_model(size_t num_layers, size_t *layer_sizes, enum func *layer_
     return model;
 }
 
-void train_model(nn_model *model, matrix *X, matrix *Y, size_t m, int epochs, double lr) {
+void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, int epochs, double lr) {
     nn_layer *layers = model->layers;
     size_t num_layers = model->num_layers;
     int last_i = num_layers - 1;
+    size_t m = mini_batch_size;
+    size_t training_set_size = X->cols;
+
+    matrix *mini_X = zero_mat(X->rows, mini_batch_size);
+    matrix *mini_Y = zero_mat(Y->rows, mini_batch_size);
+    int *indices = malloc(training_set_size * sizeof(int));
+    for (int i = 0; i < training_set_size; i++) {
+        indices[i] = i; 
+    }
 
     // Create matrices used in forward and back prop
-    layers[0].A = X; 
+    layers[0].A = mini_X; 
     size_t n_curr; 
     for (int i = 1; i < num_layers; i++) {
         n_curr = layers[i].num_nodes;
@@ -79,7 +88,15 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t m, int epochs, do
         layers[i].dZ = zero_mat(n_curr, m);
     }
 
+    printf("Training neural network model\n");
+
     for (int epoch = 0; epoch < epochs; epoch++) {
+
+        if ((epoch + 1) % 100 == 0) {
+            printf("Training progress: %d/%d\n", epoch + 1, epochs);
+        }
+
+        mini_batch(mini_X, mini_Y, X, Y, indices);
 
         // Forward propagation
         for (int i = 1; i < num_layers; i++) {
@@ -96,14 +113,14 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t m, int epochs, do
         }
 
         printf("Expected:\n");
-        print_mat(Y);
+        print_mat(mini_Y);
         printf("Predicted: \n");
         print_mat(layers[last_i].A);
 
         // Back propagation
 
         // Compute dZ for last layer
-        mat_sub(layers[last_i].dZ, layers[last_i].A, Y);
+        mat_sub(layers[last_i].dZ, layers[last_i].A, mini_Y);
 
         for (int i = last_i; i > 0; i--) {
             
@@ -136,6 +153,9 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t m, int epochs, do
 
     // Remove X from model so X isn't freed in free_model
     layers[0].A = NULL;
+    free_mat(mini_X);
+    free_mat(mini_Y);
+    free(indices);
 }
 
 void model_predict(nn_model *model, matrix *result, matrix *input) {
