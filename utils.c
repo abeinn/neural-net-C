@@ -261,14 +261,20 @@ void softmax(matrix *result, matrix *mat) {
     check_same_dims(result, mat);
     size_t rows = mat->rows; 
     size_t cols = mat->cols;
-    double sum, val;
+    double sum, val, max;
     for (int j = 0; j < cols; j++) {
         sum = 0;
+        max = mat_get(mat, 0, j);
         for (int i = 0; i < rows; i++) {
-            sum += exp(mat_get(mat, i, j));
+            if (mat_get(mat, i, j) > max) {
+                max = mat_get(mat, i, j);
+            }
         }
         for (int i = 0; i < rows; i++) {
-            val = exp(mat_get(mat, i, j)) / sum;
+            sum += exp(mat_get(mat, i, j) - max);
+        }
+        for (int i = 0; i < rows; i++) {
+            val = exp(mat_get(mat, i, j) - max) / sum;
             mat_set(result, i, j, val);
         }
     }
@@ -326,6 +332,34 @@ void mini_batch(matrix *mini_X, matrix *mini_Y, matrix *X, matrix *Y, int *indic
             mat_set(mini_Y, i_Y, j, mat_get(Y, i_Y, index));
         }
     }
+}
 
+void mat_get_col(matrix* result, matrix* mat, int idx) {
+    size_t rows = mat->rows;
+    size_t cols = mat->cols;
+    if ((result->rows != rows) || (result->cols != 1)) {
+        printf("Error: Result dimensions invalid for mat_get_col");
+    }
+    for (int i = 0; i < rows; i++) {
+        mat_set(result, i, 0, mat_get(mat, i, idx));
+    }
+}
+
+int max_index(matrix *vec) {
+    size_t rows = vec->rows;
+    if (vec->cols != 1 || rows == 0) {
+        printf("Error: max_index expects a column vector input\n\n");
+        exit(0);
+    }
+    double *data = vec->data;
+    double max_val = data[0];
+    int max_idx = 0;
+    for (int i = 0; i < rows; i++) {
+        if (data[i] > max_val) {
+            max_val = data[i];
+            max_idx = i;
+        }
+    }
+    return max_idx;
 }
 

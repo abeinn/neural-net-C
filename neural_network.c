@@ -53,14 +53,52 @@ nn_model* create_model(size_t num_layers, size_t *layer_sizes, enum func *layer_
         layers[i].dW = zero_mat(n_curr, n_prev);
         layers[i].db = zero_mat(n_curr, 1);
 
-        // Initialize intermediate vectors for use in model_predict
-        layers[i].a = zero_mat(n_curr, 1);
-        layers[i].z = zero_mat(n_curr, 1);
-
         layers[i].activation = layer_activations[i];
     }
     
     return model;
+}
+
+void model_predict(nn_model *model, matrix *result, matrix *input, size_t num_inputs) {
+    // Evaluate a trained model on input
+
+    size_t num_layers = model->num_layers;
+    nn_layer *layers = model->layers;
+    size_t n_out = layers[num_layers - 1].num_nodes;
+    size_t n_in = layers[0].num_nodes;
+    if ((result->cols != num_inputs) || (result->rows != n_out)) {
+        printf("Error: Invalid result vector for model_predict\n\n");
+        exit(0);
+    } else if ((input->cols != num_inputs) || (input->rows != n_in)) {
+        printf("Error: Invalid input vector for model_predict\n\n");
+        exit(0);
+    }
+
+    for (int i = 1; i < num_layers; i++) {
+        // Initialize intermediate vectors 
+        layers[i].a = zero_mat(layers[i].num_nodes, num_inputs);
+        layers[i].z = zero_mat(layers[i].num_nodes, num_inputs);
+    }
+
+    layers[0].a = input;
+
+    // Evaluate model on input using trained weights
+    for (int i = 1; i < num_layers; i++) {
+        mat_mul(layers[i].z, layers[i].W, layers[i - 1].a);
+        mat_vec_add(layers[i].z, layers[i].z, layers[i].b);
+
+        if (layers[i].activation == SIGMOID) {
+            sigmoid(layers[i].a, layers[i].z);
+        } else if (layers[i].activation == SOFTMAX) {
+            softmax(layers[i].a, layers[i].z);
+        } else if (layers[i].activation == RELU) {
+            relu(layers[i].a, layers[i].z);
+        }
+    }
+
+    mat_copy(result, layers[num_layers - 1].a);
+
+    layers[0].a = NULL;
 }
 
 void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, int epochs, double lr) {
@@ -112,14 +150,17 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
             }
         }
 
-        printf("Expected:\n");
-        print_mat(mini_Y);
-        printf("Predicted: \n");
-        print_mat(layers[last_i].A);
+        // printf("Expected:\n");
+        // print_mat(mini_Y);
+        // printf("Predicted: \n");
+        // print_mat(layers[last_i].A);
+        // printf("Expected: %d\n", max_index(mini_Y));
+        // printf("Predicted: %d\n\n", max_index(layers[last_i].A));
 
         // Back propagation
 
         // Compute dZ for last layer
+        
         mat_sub(layers[last_i].dZ, layers[last_i].A, mini_Y);
 
         for (int i = last_i; i > 0; i--) {
@@ -151,48 +192,36 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
         }
     }
 
+    printf("Finished training\n\n");
+
+    double corrects = 0.0;
+    matrix *Y_hat = zero_mat(Y->rows, Y->cols);
+    matrix *y = zero_mat(Y->rows, 1);
+    matrix *y_hat = zero_mat(Y->rows, 1);
+
+    printf("Evaluating model on training data\n");
+    model_predict(model, Y_hat, X, X->cols);
+
+    printf("Calculating training accuracy");
+    for (int i = 0; i < Y->cols; i++) {
+        mat_get_col(y, Y, i);
+        mat_get_col(y_hat, Y_hat, i);
+        if (max_index(y) == max_index(y_hat)) {
+            corrects += 1.0;
+        }
+    }
+
+    printf("Training accuracy: %g%%\n\n", 100.0 * corrects / (double) Y->cols);
+
     // Remove X from model so X isn't freed in free_model
     layers[0].A = NULL;
     free_mat(mini_X);
     free_mat(mini_Y);
+    free_mat(Y_hat);
     free(indices);
 }
 
-void model_predict(nn_model *model, matrix *result, matrix *input) {
-    // Evaluate a trained model on input
 
-    size_t num_layers = model->num_layers;
-    nn_layer *layers = model->layers;
-    size_t n_out = layers[num_layers - 1].num_nodes;
-    size_t n_in = layers[0].num_nodes;
-    if ((result->cols != 1) || (result->rows != n_out)) {
-        printf("Error: Invalid result vector for model_predict\n\n");
-        exit(0);
-    } else if ((input->cols != 1) || (input->rows != n_in)) {
-        printf("Error: Invalid input vector for model_predict\n\n");
-        exit(0);
-    }
-
-    layers[0].a = input;
-
-    // Evaluate model on input using trained weights
-    for (int i = 1; i < num_layers; i++) {
-        mat_mul(layers[i].z, layers[i].W, layers[i - 1].a);
-        mat_add(layers[i].z, layers[i].z, layers[i].b);
-
-        if (layers[i].activation == SIGMOID) {
-            sigmoid(layers[i].a, layers[i].z);
-        } else if (layers[i].activation == SOFTMAX) {
-            softmax(layers[i].a, layers[i].z);
-        } else if (layers[i].activation == RELU) {
-            relu(layers[i].a, layers[i].z);
-        }
-    }
-
-    mat_copy(result, layers[num_layers - 1].a);
-
-    layers[0].a = NULL;
-}
 
 void free_model(nn_model *model) {
     if (model == NULL) {

@@ -32,7 +32,7 @@ int main(void) {
     matrix *test = mat_from_array(test_arr, 2, 1);
     matrix *pred = zero_mat(2, 1);
 
-    model_predict(model, pred, test);
+    model_predict(model, pred, test, 1);
     print_mat(pred);
 
     free_model(model);
