@@ -8,7 +8,7 @@
 #define OUTPUT_CLASSES 10
 #define TRAINING_SET_SIZE 42000
 
-void load_data(matrix *X, matrix *Y, char *filename) {
+void load_training_data(matrix *X, matrix *Y, char *filename) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         printf("Error opening file");
@@ -37,9 +37,6 @@ void load_data(matrix *X, matrix *Y, char *filename) {
             field = strtok(NULL, ",");
         }
     }
-    while (fgets(line, sizeof(line), file)) {
-        // Do nothing
-    }
 
     fclose(file);
     printf("Finished loading data\n\n");
@@ -49,12 +46,12 @@ void load_data(matrix *X, matrix *Y, char *filename) {
 int main(void) {
     srand(123);
     const double lr = 0.5f;
-    const double epochs = 1000;
+    const double epochs = 10;
     const size_t mini_batch_size = 64;
 
     matrix *X = zero_mat(INPUT_SIZE, TRAINING_SET_SIZE);
     matrix *Y = zero_mat(OUTPUT_CLASSES, TRAINING_SET_SIZE);
-    load_data(X, Y, "train.csv");
+    load_training_data(X, Y, "train.csv");
     
     size_t num_layers = 2;
     size_t layer_sizes[] = {INPUT_SIZE, 10};

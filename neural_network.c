@@ -16,9 +16,7 @@ typedef struct {
     matrix *W;
     matrix *b;
     matrix *A;
-    matrix *a;
     matrix *Z;
-    matrix *z;
     matrix *dW;
     matrix *db;
     matrix *dA;
@@ -39,11 +37,12 @@ nn_model* create_model(size_t num_layers, size_t *layer_sizes, enum func *layer_
     nn_layer *layers = calloc(num_layers, sizeof(nn_layer));
     check_alloc(layers);
     model->layers = layers;
+    unsigned int i;
 
     // Initalize weights and layer sizes
     layers[0].num_nodes = layer_sizes[0];
     size_t n_curr, n_prev;
-    for (int i = 1; i < num_layers; i++) {
+    for (i = 1; i < num_layers; i++) {
         n_curr = layer_sizes[i];
         n_prev = layer_sizes[i - 1];
         layers[i].num_nodes = n_curr;
@@ -57,6 +56,25 @@ nn_model* create_model(size_t num_layers, size_t *layer_sizes, enum func *layer_
     }
     
     return model;
+}
+
+void forward_prop(nn_model *model) {
+    size_t num_layers = model->num_layers;
+    nn_layer *layers = model->layers;
+    unsigned int i;
+
+    for (i = 1; i < num_layers; i++) {
+        mat_mul(layers[i].Z, layers[i].W, layers[i - 1].A);
+        mat_vec_add(layers[i].Z, layers[i].Z, layers[i].b);
+
+        if (layers[i].activation == SIGMOID) {
+            sigmoid(layers[i].A, layers[i].Z);
+        } else if (layers[i].activation == SOFTMAX) {
+            softmax(layers[i].A, layers[i].Z);
+        } else if (layers[i].activation == RELU) {
+            relu(layers[i].A, layers[i].Z);
+        }
+    }
 }
 
 void model_predict(nn_model *model, matrix *result, matrix *input, size_t num_inputs) {
@@ -74,38 +92,26 @@ void model_predict(nn_model *model, matrix *result, matrix *input, size_t num_in
         exit(0);
     }
 
+    layers[0].A = input;
     for (int i = 1; i < num_layers; i++) {
         // Initialize intermediate vectors 
-        layers[i].a = zero_mat(layers[i].num_nodes, num_inputs);
-        layers[i].z = zero_mat(layers[i].num_nodes, num_inputs);
+        layers[i].A = zero_mat(layers[i].num_nodes, num_inputs);
+        layers[i].Z = zero_mat(layers[i].num_nodes, num_inputs);
     }
-
-    layers[0].a = input;
-
+    
     // Evaluate model on input using trained weights
+    forward_prop(model);
+
+    mat_copy(result, layers[num_layers - 1].A);
+
+    layers[0].A = NULL;
     for (int i = 1; i < num_layers; i++) {
-        mat_mul(layers[i].z, layers[i].W, layers[i - 1].a);
-        mat_vec_add(layers[i].z, layers[i].z, layers[i].b);
-
-        if (layers[i].activation == SIGMOID) {
-            sigmoid(layers[i].a, layers[i].z);
-        } else if (layers[i].activation == SOFTMAX) {
-            softmax(layers[i].a, layers[i].z);
-        } else if (layers[i].activation == RELU) {
-            relu(layers[i].a, layers[i].z);
-        }
+        free_mat(layers[i].A);
+        free_mat(layers[i].Z);
+        layers[i].A = NULL;
+        layers[i].Z = NULL;
     }
-
-    mat_copy(result, layers[num_layers - 1].a);
-
-    for (int i = 1; i < num_layers; i++) {
-        free_mat(layers[i].a);
-        free_mat(layers[i].z);
-        layers[i].a = NULL;
-        layers[i].z = NULL;
-    }
-
-    layers[0].a = NULL;
+    
 }
 
 void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, int epochs, double lr) {
@@ -114,18 +120,21 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
     int last_i = num_layers - 1;
     size_t m = mini_batch_size;
     size_t training_set_size = X->cols;
+    unsigned int i, epoch;
 
-    matrix *mini_X = zero_mat(X->rows, mini_batch_size);
-    matrix *mini_Y = zero_mat(Y->rows, mini_batch_size);
+    matrix *mini_X = zero_mat(X->rows, m);
+    matrix *mini_Y = zero_mat(Y->rows, m);
+
     int *indices = malloc(training_set_size * sizeof(int));
-    for (int i = 0; i < training_set_size; i++) {
+    check_alloc(indices);
+    for (i = 0; i < training_set_size; i++) {
         indices[i] = i; 
     }
 
     // Create matrices used in forward and back prop
     layers[0].A = mini_X; 
     size_t n_curr; 
-    for (int i = 1; i < num_layers; i++) {
+    for (i = 1; i < num_layers; i++) {
         n_curr = layers[i].num_nodes;
         layers[i].A = zero_mat(n_curr, m);
         layers[i].Z = zero_mat(n_curr, m);
@@ -135,7 +144,7 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
 
     printf("Training neural network model\n");
 
-    for (int epoch = 0; epoch < epochs; epoch++) {
+    for (epoch = 0; epoch < epochs; epoch++) {
 
         if ((epoch + 1) % 10 == 0) {
             printf("Training progress: %d/%d\n", epoch + 1, epochs);
@@ -144,33 +153,19 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
         mini_batch(mini_X, mini_Y, X, Y, indices);
 
         // Forward propagation
-        for (int i = 1; i < num_layers; i++) {
-            mat_mul(layers[i].Z, layers[i].W, layers[i - 1].A);
-            mat_vec_add(layers[i].Z, layers[i].Z, layers[i].b);
-
-            if (layers[i].activation == SIGMOID) {
-                sigmoid(layers[i].A, layers[i].Z);
-            } else if (layers[i].activation == SOFTMAX) {
-                softmax(layers[i].A, layers[i].Z);
-            } else if (layers[i].activation == RELU) {
-                relu(layers[i].A, layers[i].Z);
-            }
-        }
+        forward_prop(model);
 
         // printf("Expected:\n");
         // print_mat(mini_Y);
         // printf("Predicted: \n");
         // print_mat(layers[last_i].A);
-    
 
         // Back propagation
 
         // Compute dZ for last layer
-        
         mat_sub(layers[last_i].dZ, layers[last_i].A, mini_Y);
 
-        for (int i = last_i; i > 0; i--) {
-            
+        for (i = last_i; i > 0; i--) {
             if (i != last_i) {
                 mat_mul_trans(layers[i].dA, layers[i + 1].W, layers[i + 1].dZ, true, false);
 
@@ -192,13 +187,25 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
         }
 
         // Gradient descent
-        for (int i = last_i; i > 0; i--) {
+        for (i = last_i; i > 0; i--) {
             mat_lin_combo(layers[i].W, layers[i].W, layers[i].dW, 1.0, -lr);
             mat_lin_combo(layers[i].b, layers[i].b, layers[i].db, 1.0, -lr);
         }
     }
 
     printf("Finished training\n\n");
+
+    layers[0].A = NULL;
+    for (i = 1; i < num_layers; i++) {
+        free_mat(layers[i].A);
+        free_mat(layers[i].Z);
+        free_mat(layers[i].dA);
+        free_mat(layers[i].dZ);
+        layers[i].A = NULL;
+        layers[i].Z = NULL;
+        layers[i].dA = NULL;
+        layers[i].dZ = NULL;
+    }
 
     double corrects = 0.0;
     matrix *Y_hat = zero_mat(Y->rows, Y->cols);
@@ -209,7 +216,7 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
     model_predict(model, Y_hat, X, X->cols);
 
     printf("Calculating training accuracy\n");
-    for (int i = 0; i < Y->cols; i++) {
+    for (i = 0; i < Y->cols; i++) {
         mat_get_col(y, Y, i);
         mat_get_col(y_hat, Y_hat, i);
         if (max_index(y) == max_index(y_hat)) {
@@ -219,8 +226,6 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
 
     printf("Training accuracy: %g%%\n\n", 100.0 * corrects / (double) Y->cols);
 
-    // Remove X from model so X isn't freed in free_model
-    layers[0].A = NULL;
     free_mat(mini_X);
     free_mat(mini_Y);
     free_mat(Y_hat);
@@ -235,20 +240,22 @@ void free_model(nn_model *model) {
     if (model == NULL) {
         return;
     }
+
     size_t num_layers = model->num_layers;
     nn_layer *layers = model->layers;
-    for (int i = 0; i < num_layers; i++) {
+    unsigned int i;
+
+    for (i = 0; i < num_layers; i++) {
         free_mat(layers[i].W);
         free_mat(layers[i].b);
         free_mat(layers[i].A);
         free_mat(layers[i].Z);
-        free_mat(layers[i].a);
-        free_mat(layers[i].z);
         free_mat(layers[i].dW);
         free_mat(layers[i].db);
         free_mat(layers[i].dA);
         free_mat(layers[i].dZ);
     }
+
     free(layers);
     free(model);
 }
