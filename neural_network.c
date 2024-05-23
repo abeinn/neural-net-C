@@ -234,8 +234,6 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
     free(indices);
 }
 
-
-
 void free_model(nn_model *model) {
     if (model == NULL) {
         return;
