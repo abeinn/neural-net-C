@@ -19,6 +19,8 @@ void check_alloc(void *ptr) {
 }
 
 matrix* zero_mat(size_t rows, size_t cols) {
+    // Create a matrix of all zeroes
+
     matrix *mat = malloc(sizeof(matrix));
     check_alloc(mat);
     mat->rows = rows;
@@ -29,11 +31,14 @@ matrix* zero_mat(size_t rows, size_t cols) {
 }
 
 matrix* rand_mat(size_t rows, size_t cols) {
-    
+    // Create a matrix with random values
+
     matrix *mat = zero_mat(rows, cols);
     double *data = mat->data;
-    size_t length = rows  *cols;
-    for (int i = 0; i < length; i++) {
+    size_t length = rows * cols;
+    unsigned int i;
+
+    for (i = 0; i < length; i++) {
         data[i] = rand_weight();
     }
     return mat; 
@@ -42,8 +47,9 @@ matrix* rand_mat(size_t rows, size_t cols) {
 matrix* mat_from_array(double *arr, size_t rows, size_t cols) {
     matrix *mat = zero_mat(rows, cols);
     double *data = mat->data;
-    size_t length = rows  *cols;
-    for (int i = 0; i < length; i++) {
+    size_t length = rows * cols;
+    unsigned int i;
+    for (i = 0; i < length; i++) {
         data[i] = arr[i];
     }
     return mat; 
@@ -64,7 +70,7 @@ double mat_get(matrix *mat, int i, int j) {
         printf("Error: Index out of bounds for mat_get");
         exit(0);
     }
-    return mat->data[i  *mat->cols + j]; 
+    return mat->data[i * mat->cols + j]; 
 }
 
 void mat_set(matrix *mat, int i, int j, double val) { 
@@ -72,7 +78,7 @@ void mat_set(matrix *mat, int i, int j, double val) {
         printf("Error: Index out of bounds for mat_set");
         exit(0);
     }
-    mat->data[i  *mat->cols + j] = val; 
+    mat->data[i * mat->cols + j] = val; 
 }
 
 void print_mat(matrix *mat) {
@@ -95,16 +101,11 @@ void print_mat(matrix *mat) {
     printf("]\n\n");
 }
 
-void check_same_dims(matrix *mat1, matrix *mat2) {
+void check_same_dims(matrix *mat1, matrix *mat2, char *func_name) {
     // Checks if matrices mat1, mat2 have the same dimensions
 
-    size_t rows1 = mat1->rows;
-    size_t cols1 = mat1->cols;
-    size_t rows2 = mat2->rows;
-    size_t cols2 = mat2->cols; 
-
-    if ((rows1 != rows2) || (cols1 != cols2)) {
-        printf("Error: Matrices dimensions are not equal\n\n");
+    if ((mat1->rows != mat2->rows) || (mat1->cols != mat2->cols)) {
+        printf("Error: Matrices dimensions are not equal for function %s\n\n", func_name);
         exit(0);
     }
 }
@@ -112,13 +113,15 @@ void check_same_dims(matrix *mat1, matrix *mat2) {
 void mat_lin_combo(matrix *result, matrix *mat1, matrix *mat2, double c1, double c2) {
     // Computes c1 * mat1 + c2 * mat2 for matrices mat1, mat2 and scalars c1, c2
 
-    check_same_dims(mat1, mat2);
-    check_same_dims(mat2, result);
-    size_t length = result->rows  *result->cols;
+    check_same_dims(mat1, mat2, "mat_lin_combo");
+    check_same_dims(mat2, result, "mat_lin_combo");
+    size_t length = result->rows * result->cols;
     double *data1 = mat1->data;
     double *data2 = mat2->data;
     double *data = result->data;
-    for (int i = 0; i < length; i++) {
+    unsigned int i;
+
+    for (i = 0; i < length; i++) {
         data[i] = c1 * data1[i] + c2 * data2[i];
     }
 }
@@ -134,15 +137,18 @@ void mat_sub(matrix *result, matrix *mat1, matrix *mat2) {
 void mat_vec_add(matrix *result, matrix *mat, matrix *vec) {
     // Add column vector vec to each column of mat
 
-    check_same_dims(result, mat);
+    check_same_dims(result, mat, "mat_vec_add");
     size_t rows = result->rows;
     size_t cols = result->cols;
+    unsigned int i, j;
+
     if (vec->rows != rows || vec->cols != 1) {
         printf("Error: Invalid vector dimensions for add_vec_to_mat\n\n");
         exit(0);
     }
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
+
+    for (i = 0; i < rows; i++) {
+        for (j = 0; j < cols; j++) {
             mat_set(result, i, j, mat_get(mat, i, j) + mat_get(vec, i, 0));
         }
     }
@@ -151,22 +157,26 @@ void mat_vec_add(matrix *result, matrix *mat, matrix *vec) {
 void mat_mul_trans(matrix *result, matrix *mat1, matrix *mat2, bool t1, bool t2) {
     // Multiply matrices mat1 and mat2
     // Can transpose mat1 or mat2 before multiplying by setting t1 = true or t2 = true respectively 
-
+    
     size_t rows1 = t1 ? mat1->cols : mat1->rows;
     size_t cols1 = t1 ? mat1->rows : mat1->cols;
     size_t rows2 = t2 ? mat2->cols : mat2->rows;
     size_t cols2 = t2 ? mat2->rows : mat2->cols; 
+
+    double val1, val2, dot_prod;
+    unsigned int i, j, k;
 
     if ((cols1 != rows2) || (rows1 != result->rows) || (cols2 != result->cols)) {
         printf("Error: Dimensions are invalid for mat_mul_trans\n\n");
         exit(0);
     }
 
-    double val1, val2, dot_prod;
-    for (int i = 0; i < rows1; i++) {
-        for (int j = 0; j < cols2; j++) {
+    
+
+    for (i = 0; i < rows1; i++) {
+        for (j = 0; j < cols2; j++) {
             dot_prod = 0; 
-            for (int k = 0; k < cols1; k++) {
+            for (k = 0; k < cols1; k++) {
                 val1 = t1 ? mat_get(mat1, k, i) : mat_get(mat1, i, k);
                 val2 = t2 ? mat_get(mat2, j, k) : mat_get(mat2, k, j);
                 dot_prod += val1  *val2;
@@ -183,11 +193,13 @@ void mat_mul(matrix *result, matrix *mat1, matrix *mat2) {
 void mat_scalar_mul(matrix *result, matrix *mat, double c) {
     // Multiply each element in matrix mat by a scalar c
 
-    check_same_dims(result, mat);
-    size_t length = result->rows  *result->cols;
+    check_same_dims(result, mat, "mat_scalar_mul");
+    size_t length = result->rows * result->cols;
     double *result_data = result->data;
     double *data = mat->data;
-    for (int i = 0; i < length; i++) {
+    unsigned int i;
+
+    for (i = 0; i < length; i++) {
         result_data[i] = c * data[i];
     }
 }
@@ -199,14 +211,17 @@ void mat_copy(matrix *result, matrix *mat) {
 void mat_elem_mul(matrix *result, matrix *mat1, matrix *mat2) {
     // Element wise mulitplication of two equal sized matrices
 
-    check_same_dims(mat1, mat2);
-    check_same_dims(mat2, result);
-    size_t length = result->rows  *result->cols; 
+    check_same_dims(mat1, mat2, "mat_elem_mul");
+    check_same_dims(mat2, result, "mat_elem_mul");
+    size_t length = result->rows * result->cols; 
+
     double *data1 = mat1->data;
     double *data2 = mat2->data;
     double *data = result->data;
-    for (int i = 0; i < length; i++) {
-        data[i] = data1[i]  *data2[i];
+    unsigned int i;
+
+    for (i = 0; i < length; i++) {
+        data[i] = data1[i] * data2[i];
     }
 }
 
@@ -216,14 +231,17 @@ void mat_sum_rows(matrix *result, matrix *mat) {
 
     size_t rows = mat->rows;
     size_t cols = mat->cols;
+    double sum;
+    unsigned int i, j;
+
     if ((result->cols != 1) || (result->rows != rows)) {
         printf("Error: Invalid result dimensions for sum_rows\n\n");
         exit(0);
     }
-    double sum;
-    for (int i = 0; i < rows; i++) {
+
+    for (i = 0; i < rows; i++) {
         sum = 0;
-        for (int j = 0; j < cols; j++) {
+        for (j = 0; j < cols; j++) {
             sum += mat_get(mat, i, j);
         }
         mat_set(result, i, 0, sum);
@@ -233,11 +251,13 @@ void mat_sum_rows(matrix *result, matrix *mat) {
 void sigmoid(matrix *result, matrix *mat) {
     // Sigmoid function applied on each element of mat
 
-    check_same_dims(result, mat);
+    check_same_dims(result, mat, "sigmoid");
     size_t length = mat->rows * mat->cols;
     double *data = mat->data;
     double *result_data = result->data;
-    for (int i = 0; i < length; i++) {
+    unsigned int i;
+
+    for (i = 0; i < length; i++) {
         result_data[i] = 1 / (1 + exp(-1 * data[i]));
     }
 }
@@ -247,10 +267,12 @@ void dsigmoid(matrix *result, matrix *mat) {
     // Expects mat to be result of sigmoid(mat, X) for some X
 
     size_t length = mat->rows * mat->cols;
-    check_same_dims(result, mat);
+    check_same_dims(result, mat, "dsigmoid");
     double *data = mat->data;
     double *result_data = result->data;
-    for (int i = 0; i < length; i++) {
+    unsigned int i;
+
+    for (i = 0; i < length; i++) {
         result_data[i] = data[i] * (1 - data[i]);
     }
 }
@@ -258,22 +280,24 @@ void dsigmoid(matrix *result, matrix *mat) {
 void softmax(matrix *result, matrix *mat) {
     // Softmax function Applied to each element/column of mat
 
-    check_same_dims(result, mat);
+    check_same_dims(result, mat, "softmax");
     size_t rows = mat->rows; 
     size_t cols = mat->cols;
     double sum, val, max;
-    for (int j = 0; j < cols; j++) {
+    unsigned int i, j;
+
+    for (j = 0; j < cols; j++) {
         sum = 0;
         max = mat_get(mat, 0, j);
-        for (int i = 0; i < rows; i++) {
+        for (i = 0; i < rows; i++) {
             if (mat_get(mat, i, j) > max) {
                 max = mat_get(mat, i, j);
             }
         }
-        for (int i = 0; i < rows; i++) {
+        for (i = 0; i < rows; i++) {
             sum += exp(mat_get(mat, i, j) - max);
         }
-        for (int i = 0; i < rows; i++) {
+        for (i = 0; i < rows; i++) {
             val = exp(mat_get(mat, i, j) - max) / sum;
             mat_set(result, i, j, val);
         }
@@ -283,11 +307,13 @@ void softmax(matrix *result, matrix *mat) {
 void relu(matrix *result, matrix *mat) {
     // ReLu function applied to each element of mat 
 
-    check_same_dims(result, mat);
+    check_same_dims(result, mat, "relu");
     size_t length = mat->rows * mat->cols;
     double *data = mat->data;
     double *result_data = result->data;
-    for (int i = 0; i < length; i++) {
+    unsigned int i;
+
+    for (i = 0; i < length; i++) {
         result_data[i] = fmax(0.0, data[i]);
     }
 }
@@ -295,20 +321,26 @@ void relu(matrix *result, matrix *mat) {
 void drelu(matrix *result, matrix *mat) {
     // Derivative of ReLu function applied to each element of mat
 
-    check_same_dims(result, mat);
+    check_same_dims(result, mat, "drelu");
     size_t length = mat->rows * mat->cols;
     double *data = mat->data;
     double *result_data = result->data;
-    for (int i = 0; i < length; i++) {
+    unsigned int i;
+
+    for (i = 0; i < length; i++) {
         result_data[i] = (data[i] > 0.0) ? 1.0 : 0.0;
     }
 }
 
 void shuffle_array(int *array, int n) {
+    // Randomly shuffle the values in array
+
+    unsigned int i, j, t;
+
     if (n > 1) {
-        for (int i = 0; i < n - 1; i++) {
-            int j = i + rand() / (RAND_MAX / (n - i) + 1);
-            int t = array[j];
+        for (i = 0; i < n - 1; i++) {
+            j = i + rand() / (RAND_MAX / (n - i) + 1);
+            t = array[j];
             array[j] = array[i];
             array[i] = t;
         }
@@ -316,25 +348,29 @@ void shuffle_array(int *array, int n) {
 }
 
 void mini_batch(matrix *mini_X, matrix *mini_Y, matrix *X, matrix *Y, int *indices) {
+    // Put random subset of X and Y into mini_X and mini_Y respectively 
+
     size_t rows_X = X->rows;
     size_t rows_Y = Y->rows;
     size_t cols = mini_X->cols;
     size_t n = X->cols; 
     shuffle_array(indices, n);
-    int index; 
+    unsigned int index, i_X, i_Y, j; 
 
-    for (int j = 0; j < cols; j++) {
+    for (j = 0; j < cols; j++) {
         index = indices[j];
-        for (int i_X = 0; i_X < rows_X; i_X++) {
+        for (i_X = 0; i_X < rows_X; i_X++) {
             mat_set(mini_X, i_X, j, mat_get(X, i_X, index));
         }
-        for (int i_Y = 0; i_Y < rows_Y; i_Y++) {
+        for (i_Y = 0; i_Y < rows_Y; i_Y++) {
             mat_set(mini_Y, i_Y, j, mat_get(Y, i_Y, index));
         }
     }
 }
 
 void mat_get_col(matrix* result, matrix* mat, int idx) {
+    // Get column idx of matrix mat 
+
     size_t rows = mat->rows;
     size_t cols = mat->cols;
     if ((result->rows != rows) || (result->cols != 1)) {
@@ -346,15 +382,19 @@ void mat_get_col(matrix* result, matrix* mat, int idx) {
 }
 
 int max_index(matrix *vec) {
+    // Return the index of the maximum value in vec
+
     size_t rows = vec->rows;
     if (vec->cols != 1 || rows == 0) {
         printf("Error: max_index expects a column vector input\n\n");
         exit(0);
     }
+
     double *data = vec->data;
     double max_val = data[0];
-    int max_idx = 0;
-    for (int i = 0; i < rows; i++) {
+    unsigned int max_idx, i = 0;
+
+    for (i = 0; i < rows; i++) {
         if (data[i] > max_val) {
             max_val = data[i];
             max_idx = i;
@@ -362,4 +402,3 @@ int max_index(matrix *vec) {
     }
     return max_idx;
 }
-

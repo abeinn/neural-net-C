@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "utils.c"
+#include "math_utils.c"
 
 enum func {
     INPUT,
