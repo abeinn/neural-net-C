@@ -51,23 +51,19 @@ void mat_lin_combo(matrix *result, matrix *mat1, matrix *mat2, double c1, double
     unsigned int i;
 
     size_t length_for_vec = length / 4 * 4;
-    __m256d vec_1;
-    __m256d vec_2; 
-    __m256d vec_result;
     __m256d c1_vec = _mm256_set1_pd(c1);
     __m256d c2_vec = _mm256_set1_pd(c2);
 
     #pragma omp parallel for
     for (i = 0; i < length_for_vec; i += 4) {
-        vec_1 = _mm256_loadu_pd(data1 + i);
-        vec_2 = _mm256_loadu_pd(data2 + i);
-
-        vec_1 = _mm256_mul_pd(vec_1, c1_vec);
-        vec_2 = _mm256_mul_pd(vec_2, c2_vec);
-
-        vec_result = _mm256_add_pd(vec_1, vec_2);
-        _mm256_storeu_pd(data + i, vec_result);
+        _mm256_storeu_pd(data + i, 
+            _mm256_add_pd(
+                _mm256_mul_pd(_mm256_loadu_pd(data1 + i), c1_vec), 
+                _mm256_mul_pd(_mm256_loadu_pd(data2 + i), c2_vec)
+            )
+        );
     }
+
     for (i = length_for_vec; i < length; i++) {
         data[i] = c1 * data1[i] + c2 * data2[i];
     }
@@ -93,12 +89,14 @@ void mat_vec_add(matrix *result, matrix *mat, matrix *vec) {
         printf("Error: Invalid vector dimensions for add_vec_to_mat\n\n");
         exit(0);
     }
-
+    
+    #pragma omp parallel for collapse(2) 
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
             mat_set(result, i, j, mat_get(mat, i, j) + mat_get(vec, i, 0));
         }
     }
+    
 }
 
 void mat_mul_trans(matrix *result, matrix *mat1, matrix *mat2, bool t1, bool t2) {
@@ -118,19 +116,21 @@ void mat_mul_trans(matrix *result, matrix *mat1, matrix *mat2, bool t1, bool t2)
         exit(0);
     }
 
-    
-
     for (i = 0; i < rows1; i++) {
         for (j = 0; j < cols2; j++) {
             dot_prod = 0; 
             for (k = 0; k < cols1; k++) {
                 val1 = t1 ? mat_get(mat1, k, i) : mat_get(mat1, i, k);
                 val2 = t2 ? mat_get(mat2, j, k) : mat_get(mat2, k, j);
-                dot_prod += val1  *val2;
+                dot_prod += val1 * val2;
             }
             mat_set(result, i, j, dot_prod);
         }
     }
+
+    // for (i = 0; i < rows1; i++) {
+
+    // }
 }
 
 void mat_mul(matrix *result, matrix *mat1, matrix *mat2) {
