@@ -1,7 +1,3 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <stdbool.h>
 #include "matrix.c"
 
 matrix* zero_mat(size_t rows, size_t cols) {

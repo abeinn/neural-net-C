@@ -20,7 +20,16 @@ bool test_mat_lin_combo() {
     double c2 = rand_weight();
 
     mat_lin_combo(result, mat1, mat2, c1, c2);
-    mat_lin_combo(true_result, mat1, mat2, c1, c2);
+    
+    size_t length = true_result->rows * true_result->cols;
+    double *data1 = mat1->data;
+    double *data2 = mat2->data;
+    double *data = true_result->data;
+    unsigned int i;
+
+    for (i = 0; i < length; i++) {
+        data[i] = c1 * data1[i] + c2 * data2[i];
+    }
 
     bool output = mat_is_equal(result, true_result);
 
