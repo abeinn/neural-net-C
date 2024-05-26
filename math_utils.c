@@ -2,21 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdbool.h>
-
-typedef struct {
-    size_t rows;
-    size_t cols;
-    double *data; 
-} matrix;
-
-double rand_weight() { return ((double) rand()) / ((double) RAND_MAX); }
-
-void check_alloc(void *ptr) {
-    if (ptr == NULL) {
-        printf("Error: Memory not allocated\n");
-        exit(0);
-    }
-}
+#include "matrix.c"
 
 matrix* zero_mat(size_t rows, size_t cols) {
     // Create a matrix of all zeroes
@@ -53,61 +39,6 @@ matrix* mat_from_array(double *arr, size_t rows, size_t cols) {
         data[i] = arr[i];
     }
     return mat; 
-}
-
-void free_mat(matrix *mat) {
-    if (mat == NULL) {
-        return;
-    }
-    if (mat->data != NULL) {
-        free(mat->data);
-    }
-    free(mat);
-}
-
-double mat_get(matrix *mat, int i, int j) { 
-    if ((i >= mat->rows) || (i < 0) || (j >= mat->cols) || (j < 0)){
-        printf("Error: Index out of bounds for mat_get");
-        exit(0);
-    }
-    return mat->data[i * mat->cols + j]; 
-}
-
-void mat_set(matrix *mat, int i, int j, double val) { 
-    if ((i >= mat->rows) || (i < 0) || (j >= mat->cols) || (j < 0)){
-        printf("Error: Index out of bounds for mat_set");
-        exit(0);
-    }
-    mat->data[i * mat->cols + j] = val; 
-}
-
-void print_mat(matrix *mat) {
-    size_t rows = mat->rows; 
-    size_t cols = mat->cols;
-    printf("[");
-    for (int i = 0; i < rows; ++i) {
-        printf("[");
-        for (int j = 0; j < cols; ++j) {
-            printf("%g", mat_get(mat, i, j));
-            if (j < cols - 1) {
-                printf(", ");
-            }
-        }
-        printf("]");
-        if (i < rows - 1) {
-            printf(", \n ");
-        }
-    }
-    printf("]\n\n");
-}
-
-void check_same_dims(matrix *mat1, matrix *mat2, char *func_name) {
-    // Checks if matrices mat1, mat2 have the same dimensions
-
-    if ((mat1->rows != mat2->rows) || (mat1->cols != mat2->cols)) {
-        printf("Error: Matrices dimensions are not equal for function %s\n\n", func_name);
-        exit(0);
-    }
 }
 
 void mat_lin_combo(matrix *result, matrix *mat1, matrix *mat2, double c1, double c2) {
