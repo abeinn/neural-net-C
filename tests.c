@@ -2,7 +2,7 @@
 
 #define MIN_DIM 1
 #define MAX_DIM 100
-#define NUM_TESTS 100
+#define NUM_TESTS 10000
 
 size_t rand_dim() {
     return rand() % (MAX_DIM - MIN_DIM + 1) + MIN_DIM;
