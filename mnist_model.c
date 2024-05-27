@@ -108,16 +108,16 @@ void write_prediction(matrix *Y, char *filename) {
 
 int main(void) {
     srand(123);
-    const double lr = 0.001f;
-    const double epochs = 1000;
-    const size_t mini_batch_size = 64;
+    const double lr = 0.01f;
+    const double epochs = 10000;
+    const size_t mini_batch_size = 128;
 
     matrix *train_X = zero_mat(INPUT_SIZE, TRAINING_SET_SIZE);
     matrix *Y = zero_mat(OUTPUT_CLASSES, TRAINING_SET_SIZE);
     load_training_data(train_X, Y, "data/train.csv");
     
     size_t num_layers = 3;
-    size_t layer_sizes[] = {INPUT_SIZE, 128, 10};
+    size_t layer_sizes[] = {INPUT_SIZE, 32, 10};
     enum func layer_activations[] = {INPUT, RELU, SOFTMAX};
     nn_model *model = create_model(num_layers, layer_sizes, layer_activations);
 

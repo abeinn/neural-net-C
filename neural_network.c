@@ -59,6 +59,27 @@ nn_model* create_model(size_t num_layers, size_t *layer_sizes, enum func *layer_
     return model;
 }
 
+void mini_batch(matrix *mini_X, matrix *mini_Y, matrix *X, matrix *Y, int *indices) {
+    // Put random subset of X and Y into mini_X and mini_Y respectively 
+
+    size_t rows_X = X->rows;
+    size_t rows_Y = Y->rows;
+    size_t cols = mini_X->cols;
+    size_t n = X->cols; 
+    shuffle_array(indices, n);
+    unsigned int index, i_X, i_Y, j; 
+
+    for (j = 0; j < cols; j++) {
+        index = indices[j];
+        for (i_X = 0; i_X < rows_X; i_X++) {
+            mat_set(mini_X, i_X, j, mat_get(X, i_X, index));
+        }
+        for (i_Y = 0; i_Y < rows_Y; i_Y++) {
+            mat_set(mini_Y, i_Y, j, mat_get(Y, i_Y, index));
+        }
+    }
+}
+
 void forward_prop(nn_model *model) {
     size_t num_layers = model->num_layers;
     nn_layer *layers = model->layers;
