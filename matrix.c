@@ -30,7 +30,7 @@ void free_mat(matrix *mat) {
 
 double mat_get(matrix *mat, int i, int j) { 
     if ((i >= mat->rows) || (i < 0) || (j >= mat->cols) || (j < 0)){
-        printf("Error: Index out of bounds for mat_get");
+        printf("Error: Index out of bounds for mat_get\n\n");
         exit(0);
     }
     return mat->data[i * mat->cols + j]; 
@@ -38,7 +38,7 @@ double mat_get(matrix *mat, int i, int j) {
 
 void mat_set(matrix *mat, int i, int j, double val) { 
     if ((i >= mat->rows) || (i < 0) || (j >= mat->cols) || (j < 0)){
-        printf("Error: Index out of bounds for mat_set");
+        printf("Error: Index out of bounds for mat_set\n\n");
         exit(0);
     }
     mat->data[i * mat->cols + j] = val; 

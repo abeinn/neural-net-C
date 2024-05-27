@@ -3,13 +3,13 @@
 
 #define MIN_DIM 1
 #define MAX_DIM 100
-#define NUM_TESTS 100
+#define NUM_TESTS 1000
 
 size_t rand_dim() {
     return rand() % (MAX_DIM - MIN_DIM + 1) + MIN_DIM;
 }
 
-bool test_mat_lin_combo() {
+bool test_mat_lin_combo(bool test, bool debug) {
     size_t rows = rand_dim();
     size_t cols = rand_dim();
 
@@ -22,17 +22,29 @@ bool test_mat_lin_combo() {
 
     mat_lin_combo(result, mat1, mat2, c1, c2);
 
-    size_t length = rows * cols;
-    double *data1 = mat1->data;
-    double *data2 = mat2->data;
-    double *data = true_result->data;
-    unsigned int i;
+    bool output = true;
 
-    for (i = 0; i < length; i++) {
-        data[i] = c1 * data1[i] + c2 * data2[i];
+    if (test) {
+        size_t length = rows * cols;
+        double *data1 = mat1->data;
+        double *data2 = mat2->data;
+        double *data = true_result->data;
+        unsigned int i;
+
+        for (i = 0; i < length; i++) {
+            data[i] = c1 * data1[i] + c2 * data2[i];
+        }
+
+        output = mat_is_equal(result, true_result);
+
+        if (!output && debug) {
+            print_mat(mat1);
+            print_mat(mat2);
+            print_mat(result);
+            print_mat(true_result);
+        }
     }
-
-    bool output = mat_is_equal(result, true_result);
+    
 
     free_mat(mat1);
     free_mat(mat2);
@@ -42,7 +54,7 @@ bool test_mat_lin_combo() {
     return output; 
 }
 
-bool test_mat_vec_add() {
+bool test_mat_vec_add(bool test, bool debug) {
     size_t rows = rand_dim();
     size_t cols = rand_dim();
 
@@ -53,14 +65,25 @@ bool test_mat_vec_add() {
 
     mat_vec_add(result, mat, vec);
 
-    unsigned int i, j;
-    for (i = 0; i < rows; i++) {
-        for (j = 0; j < cols; j++) {
-            mat_set(true_result, i, j, mat_get(mat, i, j) + mat_get(vec, i, 0));
+    bool output = true;
+
+    if (test) {
+        unsigned int i, j;
+        for (i = 0; i < rows; i++) {
+            for (j = 0; j < cols; j++) {
+                mat_set(true_result, i, j, mat_get(mat, i, j) + mat_get(vec, i, 0));
+            }
+        }
+
+        output = mat_is_equal(result, true_result);
+
+        if (!output && debug) {
+            print_mat(mat);
+            print_mat(vec);
+            print_mat(result);
+            print_mat(true_result);
         }
     }
-
-    bool output = mat_is_equal(result, true_result);
 
     free_mat(mat);
     free_mat(vec);
@@ -70,38 +93,51 @@ bool test_mat_vec_add() {
     return output;
 }
 
-bool test_mat_mul_trans() {
+bool test_mat_mul_trans(bool test, bool debug) {
     
-    size_t rows1 = rand_dim();
-    size_t cols1 = rand_dim();
-    size_t rows2 = cols1;
-    size_t cols2 = rand_dim();
-    bool t1 = false;
-    bool t2 = false;
+    size_t dim1 = rand_dim();
+    size_t dim2 = rand_dim();
+    size_t dim3 = rand_dim();
+    bool t1 = (bool) rand() % 2;
+    bool t2 = (bool) rand() % 2;
 
-    matrix *mat1 = rand_mat(rows1, cols1);
-    matrix *mat2 = rand_mat(rows2, cols2);
-    matrix *result = zero_mat(rows1, cols2);
-    matrix *true_result = zero_mat(rows1, cols2);
+    matrix *mat1 = t1 ? rand_mat(dim2, dim1) : rand_mat(dim1, dim2);
+    matrix *mat2 = t2 ? rand_mat(dim3, dim2) : rand_mat(dim2, dim3);
+    matrix *result = zero_mat(dim1, dim3);
+    matrix *true_result = zero_mat(dim1, dim3);
 
     mat_mul_trans(result, mat1, mat2, t1, t2);
 
-    unsigned int i, j, k;
-    double val1, val2, dot_prod;
-    for (i = 0; i < rows1; i++) {
-        for (j = 0; j < cols2; j++) {
-            dot_prod = 0; 
-            for (k = 0; k < cols1; k++) {
-                val1 = t1 ? mat_get(mat1, k, i) : mat_get(mat1, i, k);
-                val2 = t2 ? mat_get(mat2, j, k) : mat_get(mat2, k, j);
-                dot_prod += val1 * val2;
+    bool output = true;
+
+    if (test == true) {
+        size_t rows1 = t1 ? mat1->cols : mat1->rows;
+        size_t cols1 = t1 ? mat1->rows : mat1->cols;
+        size_t cols2 = t2 ? mat2->rows : mat2->cols; 
+        unsigned int i, j, k;
+        double val1, val2, dot_prod;
+        for (i = 0; i < rows1; i++) {
+            for (j = 0; j < cols2; j++) {
+                dot_prod = 0; 
+                for (k = 0; k < cols1; k++) {
+                    val1 = t1 ? mat_get(mat1, k, i) : mat_get(mat1, i, k);
+                    val2 = t2 ? mat_get(mat2, j, k) : mat_get(mat2, k, j);
+                    dot_prod += val1 * val2;
+                }
+                mat_set(true_result, i, j, dot_prod);
             }
-            mat_set(true_result, i, j, dot_prod);
+        }
+
+        output = mat_is_equal(result, true_result);
+
+        if (!output && debug) {
+            print_mat(mat1);
+            print_mat(mat2);
+            print_mat(result);
+            print_mat(true_result);
         }
     }
-
-    bool output = mat_is_equal(result, true_result);
-
+    
     free_mat(mat1);
     free_mat(mat2);
     free_mat(result);
@@ -110,7 +146,7 @@ bool test_mat_mul_trans() {
     return output;
 }
 
-void run_tests(bool (*test_func)(), char *func_name) {
+void run_tests(bool (*test_func)(bool, bool), char *func_name, bool test, bool debug) {
 
     printf("Testing %s\n", func_name);
     bool result = true; 
@@ -118,13 +154,13 @@ void run_tests(bool (*test_func)(), char *func_name) {
     clock_t start = clock();
 
     for (i = 0; i < NUM_TESTS; i++) {
-        if (test_func() == false) {
+        if (test_func(test, debug) == false) {
             result = false; 
             break; 
         }
     }
 
-    if (result == true) {
+    if (result) {
         printf("All tests passed!\n");
     } else {
         printf("TEST FAILED\n");
@@ -136,9 +172,9 @@ void run_tests(bool (*test_func)(), char *func_name) {
 
 int main(void) {
     
-    // run_tests(test_mat_lin_combo, "mat_lin_combo");
-    // run_tests(test_mat_vec_add, "mat_vec_add");
-    run_tests(test_mat_mul_trans, "mat_mul_trans");
+    run_tests(test_mat_lin_combo, "mat_lin_combo", true, true);
+    run_tests(test_mat_vec_add, "mat_vec_add", true, true);
+    run_tests(test_mat_mul_trans, "mat_mul_trans", true, true);
     
 
 }

@@ -54,7 +54,6 @@ void mat_lin_combo(matrix *result, matrix *mat1, matrix *mat2, double c1, double
     __m256d c1_vec = _mm256_set1_pd(c1);
     __m256d c2_vec = _mm256_set1_pd(c2);
 
-    #pragma omp parallel for
     for (i = 0; i < length_for_vec; i += 4) {
         _mm256_storeu_pd(data + i, 
             _mm256_add_pd(
@@ -90,7 +89,6 @@ void mat_vec_add(matrix *result, matrix *mat, matrix *vec) {
         exit(0);
     }
     
-    #pragma omp parallel for collapse(2) 
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
             mat_set(result, i, j, mat_get(mat, i, j) + mat_get(vec, i, 0));
@@ -99,43 +97,100 @@ void mat_vec_add(matrix *result, matrix *mat, matrix *vec) {
     
 }
 
-void mat_mul_trans(matrix *result, matrix *mat1, matrix *mat2, bool t1, bool t2) {
-    // Multiply matrices mat1 and mat2
-    // Can transpose mat1 or mat2 before multiplying by setting t1 = true or t2 = true respectively 
-    
-    size_t rows1 = t1 ? mat1->cols : mat1->rows;
-    size_t cols1 = t1 ? mat1->rows : mat1->cols;
-    size_t rows2 = t2 ? mat2->cols : mat2->rows;
-    size_t cols2 = t2 ? mat2->rows : mat2->cols; 
+void transpose(matrix *result, matrix *mat) {
+    size_t rows = mat->rows;
+    size_t cols = mat->cols;
+    double *data = mat->data;
+    double *result_data = result->data;
+    unsigned int i, j;
 
-    double val1, val2, dot_prod;
-    unsigned int i, j, k;
-
-    if ((cols1 != rows2) || (rows1 != result->rows) || (cols2 != result->cols)) {
-        printf("Error: Dimensions are invalid for mat_mul_trans\n\n");
+    if ((rows != result-> cols) || (cols != result->rows)) {
+        printf("Invalid result dimensions for tranpose\n\n");
         exit(0);
     }
 
+    for (i = 0; i < rows; i++) {
+        for (j = 0; j < cols; j++) {
+            result_data[j * rows + i] = data[i * cols + j];
+        }
+    }
+}
+
+void mat_mul(matrix *result, matrix *mat1, matrix *mat2) {
+    size_t rows1 = mat1->rows;
+    size_t cols1 = mat1->cols;
+    size_t rows2 = mat2->rows;
+    size_t cols2 = mat2->cols; 
+
+    if ((cols1 != rows2) || (rows1 != result->rows) || (cols2 != result->cols)) {
+        printf("Error: Dimensions are invalid for mat_mul\n\n");
+        exit(0);
+    }
+
+    double *data1 = mat1->data;
+    double *data2 = mat2->data;
+    double *data = result->data;
+    size_t cols2_for_vec = cols2 / 4 * 4;
+    unsigned int i;
+
     for (i = 0; i < rows1; i++) {
-        for (j = 0; j < cols2; j++) {
+        
+        unsigned int j, k;
+        double val1, val2, dot_prod;
+        __m256d sum_vec;
+        for (j = 0; j < cols2_for_vec; j += 4) {
+
+            sum_vec = _mm256_setzero_pd();
+            for (k = 0; k < cols1; k++) {
+                sum_vec = _mm256_add_pd(
+                    sum_vec,
+                    _mm256_mul_pd(
+                        _mm256_set1_pd(mat_get(mat1, i, k)),
+                        _mm256_loadu_pd(data2 + (k * cols2 + j))
+                    )
+                );
+            }
+            _mm256_storeu_pd(data + (i * cols2 + j), sum_vec);
+        }
+        for (j = cols2_for_vec; j < cols2; j++) {
             dot_prod = 0; 
             for (k = 0; k < cols1; k++) {
-                val1 = t1 ? mat_get(mat1, k, i) : mat_get(mat1, i, k);
-                val2 = t2 ? mat_get(mat2, j, k) : mat_get(mat2, k, j);
+                val1 = mat_get(mat1, i, k);
+                val2 = mat_get(mat2, k, j);
                 dot_prod += val1 * val2;
             }
             mat_set(result, i, j, dot_prod);
         }
     }
-
-    // for (i = 0; i < rows1; i++) {
-
-    // }
 }
 
-void mat_mul(matrix *result, matrix *mat1, matrix *mat2) {
-    mat_mul_trans(result, mat1, mat2, false, false);
+void mat_mul_trans(matrix *result, matrix *mat1, matrix *mat2, bool t1, bool t2) {
+    // Multiply matrices mat1 and mat2
+    // Can transpose mat1 or mat2 before multiplying by setting t1 = true or t2 = true respectively 
+
+    matrix *matA = mat1; 
+    matrix *matB = mat2; 
+
+    if (t1) {
+        matA = zero_mat(mat1->cols, mat1->rows);
+        transpose(matA, mat1);
+    } 
+    if (t2) {
+        matB = zero_mat(mat2->cols, mat2->rows);
+        transpose(matB, mat2);
+    }
+
+    mat_mul(result, matA, matB);
+
+    if (t1) {
+        free_mat(matA);
+    }
+    if (t2) {
+        free_mat(matB);
+    }
+    
 }
+
 
 void mat_scalar_mul(matrix *result, matrix *mat, double c) {
     // Multiply each element in matrix mat by a scalar c
