@@ -1,5 +1,6 @@
 #include "matrix.c"
 #include <immintrin.h>
+#include <omp.h>
 
 void mat_lin_combo(matrix *result, matrix *mat1, matrix *mat2, double c1, double c2) {
     // Computes c1 * mat1 + c2 * mat2 for matrices mat1, mat2 and scalars c1, c2
@@ -16,6 +17,7 @@ void mat_lin_combo(matrix *result, matrix *mat1, matrix *mat2, double c1, double
     __m256d c1_vec = _mm256_set1_pd(c1);
     __m256d c2_vec = _mm256_set1_pd(c2);
 
+    #pragma omp parallel for
     for (i = 0; i < length_for_vec; i += 4) {
         _mm256_storeu_pd(data + i, 
             _mm256_add_pd(
@@ -51,6 +53,7 @@ void mat_vec_add(matrix *result, matrix *mat, matrix *vec) {
         exit(0);
     }
     
+    #pragma omp parallel for collapse(2)
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
             mat_set(result, i, j, mat_get(mat, i, j) + mat_get(vec, i, 0));
@@ -71,6 +74,7 @@ void transpose(matrix *result, matrix *mat) {
         exit(0);
     }
 
+    #pragma omp parallel for collapse(2)
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
             result_data[j * rows + i] = data[i * cols + j];
@@ -79,8 +83,6 @@ void transpose(matrix *result, matrix *mat) {
 }
 
 void mat_mul(matrix *result, matrix *mat1, matrix *mat2) {
-
-    // TODO: Make result all zeroes 
 
     size_t rows1 = mat1->rows;
     size_t cols1 = mat1->cols;
@@ -98,6 +100,7 @@ void mat_mul(matrix *result, matrix *mat1, matrix *mat2) {
     size_t cols2_for_vec = cols2 / 4 * 4;
     unsigned int i;
 
+    #pragma omp parallel for
     for (i = 0; i < rows1; i++) {
         
         unsigned int j, k;
@@ -165,6 +168,7 @@ void mat_scalar_mul(matrix *result, matrix *mat, double c) {
     double *data = mat->data;
     unsigned int i;
 
+    #pragma omp parallel for
     for (i = 0; i < length; i++) {
         result_data[i] = c * data[i];
     }
@@ -185,7 +189,8 @@ void mat_elem_mul(matrix *result, matrix *mat1, matrix *mat2) {
     double *data2 = mat2->data;
     double *data = result->data;
     unsigned int i;
-
+    
+    #pragma omp parallel for
     for (i = 0; i < length; i++) {
         data[i] = data1[i] * data2[i];
     }
@@ -197,16 +202,17 @@ void mat_sum_rows(matrix *result, matrix *mat) {
 
     size_t rows = mat->rows;
     size_t cols = mat->cols;
-    double sum;
-    unsigned int i, j;
+    unsigned int i;
 
     if ((result->cols != 1) || (result->rows != rows)) {
         printf("Error: Invalid result dimensions for sum_rows\n\n");
         exit(0);
     }
 
+    #pragma omp parallel for
     for (i = 0; i < rows; i++) {
-        sum = 0;
+        double sum = 0;
+        unsigned int j;
         for (j = 0; j < cols; j++) {
             sum += mat_get(mat, i, j);
         }
@@ -223,6 +229,7 @@ void sigmoid(matrix *result, matrix *mat) {
     double *result_data = result->data;
     unsigned int i;
 
+    #pragma omp parallel for
     for (i = 0; i < length; i++) {
         result_data[i] = 1 / (1 + exp(-1 * data[i]));
     }
@@ -238,6 +245,7 @@ void dsigmoid(matrix *result, matrix *mat) {
     double *result_data = result->data;
     unsigned int i;
 
+    #pragma omp parallel for
     for (i = 0; i < length; i++) {
         result_data[i] = data[i] * (1 - data[i]);
     }
@@ -279,6 +287,7 @@ void relu(matrix *result, matrix *mat) {
     double *result_data = result->data;
     unsigned int i;
 
+    #pragma omp parallel for
     for (i = 0; i < length; i++) {
         result_data[i] = fmax(0.0, data[i]);
     }
@@ -293,6 +302,7 @@ void drelu(matrix *result, matrix *mat) {
     double *result_data = result->data;
     unsigned int i;
 
+    #pragma omp parallel for
     for (i = 0; i < length; i++) {
         result_data[i] = (data[i] > 0.0) ? 1.0 : 0.0;
     }
@@ -324,6 +334,7 @@ void mat_get_col(matrix *result, matrix *mat, int idx) {
         printf("Error: Result dimensions invalid for mat_get_col");
     }
 
+    #pragma omp parallel for
     for (i = 0; i < rows; i++) {
         mat_set(result, i, 0, mat_get(mat, i, idx));
     }
@@ -340,7 +351,8 @@ void mat_get_row(matrix *result, matrix *mat, int idx) {
         printf("Error: Result dimensions invalid for mat_get_col");
     }
 
-    for ( j = 0; j < cols; j++) {
+    #pragma omp parallel for
+    for (j = 0; j < cols; j++) {
         mat_set(result, 0, j, mat_get(mat, idx, j));
     }
 }
@@ -357,7 +369,7 @@ int max_index(matrix *vec) {
     double *data = vec->data;
     double max_val = data[0];
     unsigned int max_idx, i = 0;
-
+    
     for (i = 0; i < rows; i++) {
         if (data[i] > max_val) {
             max_val = data[i];

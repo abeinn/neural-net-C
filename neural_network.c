@@ -22,6 +22,10 @@ typedef struct {
     matrix *db;
     matrix *dA;
     matrix *dZ;
+    matrix *V_dW;
+    matrix *V_db;
+    matrix *S_dW;
+    matrix *S_db;
 } nn_layer; 
 
 typedef struct {
@@ -49,9 +53,14 @@ nn_model* create_model(size_t num_layers, size_t *layer_sizes, enum func *layer_
         layers[i].num_nodes = n_curr;
 
         layers[i].W = rand_mat(n_curr, n_prev);
-        layers[i].b = rand_mat(n_curr, 1);
         layers[i].dW = zero_mat(n_curr, n_prev);
+        layers[i].S_dW = zero_mat(n_curr, n_prev);
+        layers[i].V_dW = zero_mat(n_curr, n_prev);
+        
+        layers[i].b = rand_mat(n_curr, 1);
         layers[i].db = zero_mat(n_curr, 1);
+        layers[i].S_db = zero_mat(n_curr, 1);
+        layers[i].V_db = zero_mat(n_curr, 1);
 
         layers[i].activation = layer_activations[i];
     }
@@ -136,7 +145,47 @@ void model_predict(nn_model *model, matrix *result, matrix *input, size_t num_in
     
 }
 
-void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, int epochs, double lr) {
+void grad_descent_adam(nn_layer *layers, int i, int epoch, double lr, double beta_1, double beta_2, double epsilon) {
+
+    size_t length_w = layers[i].dW->rows * layers[i].dW->cols;
+    size_t length_b = layers[i].db->rows;
+    unsigned int j;
+    epoch++;
+
+    double *data_vw = layers[i].V_dW->data;
+    double *data_vb = layers[i].V_db->data;
+    double *data_sw = layers[i].S_dW->data;
+    double *data_sb = layers[i].S_db->data;
+    double *data_dw = layers[i].dW->data;
+    double *data_db = layers[i].db->data;
+    double *data_w = layers[i].W->data;
+    double *data_b = layers[i].b->data;
+
+    mat_lin_combo(layers[i].V_dW, layers[i].V_dW, layers[i].dW, beta_1, 1 - beta_1);
+    mat_lin_combo(layers[i].V_db, layers[i].V_db, layers[i].db, beta_1, 1 - beta_1);
+
+    double corr_1 = (1 - pow(beta_1, (double) epoch));
+    double corr_2 = (1 - pow(beta_2, (double) epoch));
+
+    #pragma omp parallel for 
+    for (j = 0; j < length_w; j++) {
+        data_sw[j] = beta_2 * data_sw[j] + (1 - beta_2) * pow(data_dw[j], 2.0);
+        double vw_corr = data_vw[j] / corr_1;
+        double sw_corr = data_sw[j] / corr_2;
+        data_w[j] -= lr * vw_corr / (sqrt(sw_corr) + epsilon);
+    }   
+
+
+    #pragma omp parallel for 
+    for (j = 0; j < length_b; j++) {
+        data_sb[j] = beta_2 * data_sb[j] + (1 - beta_2) * pow(data_db[j], 2.0);
+        double vb_corr = data_vb[j] / corr_1;
+        double sb_corr = data_sb[j] / corr_2;
+        data_b[j] -= lr * vb_corr / (sqrt(sb_corr) + epsilon);
+    }
+}
+
+void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, int epochs, double lr, double beta_1, double beta_2, double epsilon) {
     nn_layer *layers = model->layers;
     size_t num_layers = model->num_layers;
     int last_i = num_layers - 1;
@@ -178,11 +227,6 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
         // Forward propagation
         forward_prop(model);
 
-        // printf("Expected:\n");
-        // print_mat(mini_Y);
-        // printf("Predicted: \n");
-        // print_mat(layers[last_i].A);
-
         // Back propagation
 
         // Compute dZ for last layer
@@ -211,8 +255,12 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
 
         // Gradient descent
         for (i = last_i; i > 0; i--) {
-            mat_lin_combo(layers[i].W, layers[i].W, layers[i].dW, 1.0, -lr);
-            mat_lin_combo(layers[i].b, layers[i].b, layers[i].db, 1.0, -lr);
+
+            // Adam optimizer 
+            grad_descent_adam(layers, i, epoch, lr, beta_1, beta_2, epsilon);
+
+            // mat_lin_combo(layers[i].W, layers[i].W, layers[i].dW, 1.0, -lr);
+            // mat_lin_combo(layers[i].b, layers[i].b, layers[i].db, 1.0, -lr);
         }
     }
 
@@ -244,6 +292,7 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
     for (i = 0; i < Y->cols; i++) {
         mat_get_col(y, Y, i);
         mat_get_col(y_hat, Y_hat, i);
+
         if (max_index(y) == max_index(y_hat)) {
             corrects += 1.0;
         }
@@ -277,6 +326,10 @@ void free_model(nn_model *model) {
         free_mat(layers[i].db);
         free_mat(layers[i].dA);
         free_mat(layers[i].dZ);
+        free_mat(layers[i].V_dW);
+        free_mat(layers[i].V_db);
+        free_mat(layers[i].S_dW);
+        free_mat(layers[i].S_db);
     }
 
     free(layers);
