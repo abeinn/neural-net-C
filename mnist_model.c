@@ -114,7 +114,7 @@ int main(void) {
 
     matrix *train_X = zero_mat(INPUT_SIZE, TRAINING_SET_SIZE);
     matrix *Y = zero_mat(OUTPUT_CLASSES, TRAINING_SET_SIZE);
-    load_training_data(train_X, Y, "train.csv");
+    load_training_data(train_X, Y, "data/train.csv");
     
     size_t num_layers = 3;
     size_t layer_sizes[] = {INPUT_SIZE, 128, 10};
@@ -125,10 +125,10 @@ int main(void) {
 
     matrix *test_X = zero_mat(INPUT_SIZE, TEST_SET_SIZE);
     matrix *Y_hat = zero_mat(OUTPUT_CLASSES, TEST_SET_SIZE);
-    load_test_data(test_X, "test.csv");
+    load_test_data(test_X, "data/test.csv");
 
     model_predict(model, Y_hat, test_X, TEST_SET_SIZE);
-    write_prediction(Y_hat, "output.csv");
+    write_prediction(Y_hat, "data/output.csv");
 
     free_model(model);
     free_mat(train_X);

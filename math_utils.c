@@ -1,43 +1,5 @@
 #include "matrix.c"
-#include <omp.h>
 #include <immintrin.h>
-
-matrix* zero_mat(size_t rows, size_t cols) {
-    // Create a matrix of all zeroes
-
-    matrix *mat = malloc(sizeof(matrix));
-    check_alloc(mat);
-    mat->rows = rows;
-    mat->cols = cols; 
-    mat->data = calloc(rows * cols, sizeof(double));
-    check_alloc(mat->data);
-    return mat;
-}
-
-matrix* rand_mat(size_t rows, size_t cols) {
-    // Create a matrix with random values
-
-    matrix *mat = zero_mat(rows, cols);
-    double *data = mat->data;
-    size_t length = rows * cols;
-    unsigned int i;
-
-    for (i = 0; i < length; i++) {
-        data[i] = rand_weight();
-    }
-    return mat; 
-}
-
-matrix* mat_from_array(double *arr, size_t rows, size_t cols) {
-    matrix *mat = zero_mat(rows, cols);
-    double *data = mat->data;
-    size_t length = rows * cols;
-    unsigned int i;
-    for (i = 0; i < length; i++) {
-        data[i] = arr[i];
-    }
-    return mat; 
-}
 
 void mat_lin_combo(matrix *result, matrix *mat1, matrix *mat2, double c1, double c2) {
     // Computes c1 * mat1 + c2 * mat2 for matrices mat1, mat2 and scalars c1, c2
@@ -117,6 +79,9 @@ void transpose(matrix *result, matrix *mat) {
 }
 
 void mat_mul(matrix *result, matrix *mat1, matrix *mat2) {
+
+    // TODO: Make result all zeroes 
+
     size_t rows1 = mat1->rows;
     size_t cols1 = mat1->cols;
     size_t rows2 = mat2->rows;
@@ -190,7 +155,6 @@ void mat_mul_trans(matrix *result, matrix *mat1, matrix *mat2, bool t1, bool t2)
     }
     
 }
-
 
 void mat_scalar_mul(matrix *result, matrix *mat, double c) {
     // Multiply each element in matrix mat by a scalar c
@@ -370,16 +334,35 @@ void mini_batch(matrix *mini_X, matrix *mini_Y, matrix *X, matrix *Y, int *indic
     }
 }
 
-void mat_get_col(matrix* result, matrix* mat, int idx) {
+void mat_get_col(matrix *result, matrix *mat, int idx) {
     // Get column idx of matrix mat 
 
     size_t rows = mat->rows;
     size_t cols = mat->cols;
+    unsigned int i;
+
     if ((result->rows != rows) || (result->cols != 1)) {
         printf("Error: Result dimensions invalid for mat_get_col");
     }
-    for (int i = 0; i < rows; i++) {
+
+    for (i = 0; i < rows; i++) {
         mat_set(result, i, 0, mat_get(mat, i, idx));
+    }
+}
+
+void mat_get_row(matrix *result, matrix *mat, int idx) {
+    // Get row idx of matrix mat 
+
+    size_t rows = mat->rows;
+    size_t cols = mat->cols;
+    unsigned int j;
+
+    if ((result->cols != cols) || (result->rows != 1)) {
+        printf("Error: Result dimensions invalid for mat_get_col");
+    }
+
+    for ( j = 0; j < cols; j++) {
+        mat_set(result, 0, j, mat_get(mat, idx, j));
     }
 }
 

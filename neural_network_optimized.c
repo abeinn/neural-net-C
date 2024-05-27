@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
+#include <omp.h>
 #include "math_utils.c"
 
 enum func {
@@ -16,12 +17,12 @@ typedef struct {
     enum func activation;
     matrix *W;
     matrix *b;
-    matrix *A;
-    matrix *Z;
+    matrix **A;
+    matrix **Z;
     matrix *dW;
     matrix *db;
-    matrix *dA;
-    matrix *dZ;
+    matrix **dA;
+    matrix **dZ;
 } nn_layer; 
 
 typedef struct {
@@ -121,10 +122,10 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
     int last_i = num_layers - 1;
     size_t m = mini_batch_size;
     size_t training_set_size = X->cols;
-    unsigned int i, epoch;
+    unsigned int i, j, epoch;
 
-    matrix *mini_X = zero_mat(X->rows, m);
-    matrix *mini_Y = zero_mat(Y->rows, m);
+    matrix **mini_X = zero_mat(X->rows, m);
+    matrix **mini_Y = zero_mat(Y->rows, m);
 
     int *indices = malloc(training_set_size * sizeof(int));
     check_alloc(indices);
@@ -137,10 +138,21 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
     size_t n_curr; 
     for (i = 1; i < num_layers; i++) {
         n_curr = layers[i].num_nodes;
-        layers[i].A = zero_mat(n_curr, m);
-        layers[i].Z = zero_mat(n_curr, m);
-        layers[i].dA = zero_mat(n_curr, m);
-        layers[i].dZ = zero_mat(n_curr, m);
+        layers[i].A = malloc(m * sizeof(matrix*));
+        check_alloc(layers[i].A);
+        layers[i].Z = malloc(m * sizeof(matrix*));
+        check_alloc(layers[i].Z);
+        layers[i].dA = malloc(m * sizeof(matrix*));
+        check_alloc(layers[i].dA);
+        layers[i].dZ = malloc(m * sizeof(matrix*));
+        check_alloc(layers[i].dZ);
+
+        for (j = 0; j < m; j++) {
+            layers[i].A[j] = rand_mat(n_curr, 1);
+            layers[i].Z[j] = rand_mat(n_curr, 1);
+            layers[i].dA[j] = rand_mat(n_curr, 1);
+            layers[i].dZ[j] = rand_mat(n_curr, 1);
+        }
     }
 
     printf("Training neural network model\n");
@@ -153,6 +165,7 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
         }
 
         mini_batch(mini_X, mini_Y, X, Y, indices);
+        
 
         // Forward propagation
         forward_prop(model);
