@@ -18,6 +18,61 @@ void check_alloc(void *ptr) {
     }
 }
 
+matrix* zero_mat(size_t rows, size_t cols) {
+    // Create a matrix of all zeroes
+
+    matrix *mat = malloc(sizeof(matrix));
+    check_alloc(mat);
+    mat->rows = rows;
+    mat->cols = cols; 
+    mat->data = calloc(rows * cols, sizeof(double));
+    check_alloc(mat->data);
+    return mat;
+}
+
+matrix* rand_mat(size_t rows, size_t cols) {
+    // Create a matrix with random values
+
+    matrix *mat = zero_mat(rows, cols);
+    double *data = mat->data;
+    size_t length = rows * cols;
+    unsigned int i;
+
+    for (i = 0; i < length; i++) {
+        data[i] = rand_weight();
+    }
+    return mat; 
+}
+
+matrix* mat_from_array(double *arr, size_t rows, size_t cols) {
+    matrix *mat = zero_mat(rows, cols);
+    double *data = mat->data;
+    size_t length = rows * cols;
+    unsigned int i;
+    for (i = 0; i < length; i++) {
+        data[i] = arr[i];
+    }
+    return mat; 
+}
+
+matrix** zero_mat_lst(size_t rows, size_t cols) {
+    matrix **mat_lst = malloc(cols * sizeof(matrix*));
+    unsigned int i;
+    for (i = 0; i < cols; i++) {
+        mat_lst[i] = zero_mat(rows, 1);
+    }
+    return mat_lst;
+}
+
+matrix** rand_mat_lst(size_t rows, size_t cols) {
+    matrix **mat_lst = malloc(cols * sizeof(matrix*));
+    unsigned int i;
+    for (i = 0; i < cols; i++) {
+        mat_lst[i] = rand_mat(rows, 1);
+    }
+    return mat_lst;
+}
+
 void free_mat(matrix *mat) {
     if (mat == NULL) {
         return;
@@ -26,6 +81,14 @@ void free_mat(matrix *mat) {
         free(mat->data);
     }
     free(mat);
+}
+
+void free_mat_list(matrix **lst, size_t cols) {
+    unsigned int i;
+    for (i = 0; i < cols; i++){ 
+        free_mat(lst[i]);
+    }
+    free(lst);
 }
 
 double mat_get(matrix *mat, int i, int j) { 
