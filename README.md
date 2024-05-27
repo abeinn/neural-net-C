@@ -1,5 +1,5 @@
 # Description
-Implementation of a neural network framework in plain C. 
+Implementation of a neural network library in plain C. 
 # How It Works
 Basic matrix operations are defined in `matrix.c`, while other math functions are defined in `math_utils.c`. Neural network operations (create, train, evaluate) are defined in `neural_network.c`. Currently, the ReLu, Sigmoid, and Softmax activation functions are supported, along with multiple layers and varying nodes in each layer. Training works by performing forward prop, back prop, and a gradient descent update (using the Adam optimization algorithm). After training finishes, the training accuracy is computed on the entire training set. 
 
