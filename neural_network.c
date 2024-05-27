@@ -191,7 +191,9 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
     int last_i = num_layers - 1;
     size_t m = mini_batch_size;
     size_t training_set_size = X->cols;
-    unsigned int i, epoch;
+    unsigned int i, j, epoch;
+    double loss;
+    double small_val = pow(10, -16.0); 
 
     matrix *mini_X = zero_mat(X->rows, m);
     matrix *mini_Y = zero_mat(Y->rows, m);
@@ -217,10 +219,6 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
     clock_t start = clock();
 
     for (epoch = 0; epoch < epochs; epoch++) {
-
-        if ((epoch + 1) % 10 == 0) {
-            printf("Training progress: %d/%d\n", epoch + 1, epochs);
-        }
 
         mini_batch(mini_X, mini_Y, X, Y, indices);
 
@@ -261,6 +259,19 @@ void train_model(nn_model *model, matrix *X, matrix *Y, size_t mini_batch_size, 
 
             // mat_lin_combo(layers[i].W, layers[i].W, layers[i].dW, 1.0, -lr);
             // mat_lin_combo(layers[i].b, layers[i].b, layers[i].db, 1.0, -lr);
+        }
+
+        // Calculate loss
+        loss = 0.0;
+        for (i = 0; i < Y->rows; i++) {
+            for (j = 0; j < m; j++) {
+                loss -= mat_get(mini_Y, i, j) * log(mat_get(layers[last_i].A, i, j) + small_val);
+            }
+        }    
+        loss /= (double) m;
+
+        if ((epoch + 1) % 1 == 0) {
+            printf("Epoch %d/%d     Loss: %g\n", epoch + 1, epochs, loss);
         }
     }
 

@@ -112,16 +112,16 @@ int main(void) {
     const double beta_1 = 0.9f;
     const double beta_2 = 0.999f;
     const double epsilon = pow(10.0, -8.0);
-    const double epochs = 50;
-    const size_t mini_batch_size = 64;
+    const double epochs = 1000;
+    const size_t mini_batch_size = 1024;
 
     matrix *train_X = zero_mat(INPUT_SIZE, TRAINING_SET_SIZE);
     matrix *Y = zero_mat(OUTPUT_CLASSES, TRAINING_SET_SIZE);
     load_training_data(train_X, Y, "data/train.csv");
     
-    size_t num_layers = 4;
-    size_t layer_sizes[] = {INPUT_SIZE, 512, 512, 10};
-    enum func layer_activations[] = {INPUT, RELU, RELU, SOFTMAX};
+    size_t num_layers = 3;
+    size_t layer_sizes[] = {INPUT_SIZE, 512, 10};
+    enum func layer_activations[] = {INPUT, RELU, SOFTMAX};
     nn_model *model = create_model(num_layers, layer_sizes, layer_activations);
 
     train_model(model, train_X, Y, mini_batch_size, epochs, lr, beta_1, beta_2, epsilon);
